@@ -1,6 +1,9 @@
+from copy import copy
 from fractions import Fraction
 from typing import Callable, Set
-from JrpgBattle.Attack import Attack, AttackPlan
+
+from JrpgBattle import Party
+from JrpgBattle.Attack import Attack, AttackPlan, AttackQueue
 
 """
 The CharacterSheet descibes the profile of a character without reference
@@ -17,53 +20,119 @@ class CharacterSheet:
                  max_hp: int,
                  offensive_type_affinities: Set[Multiplier]={},
                  defensive_type_affinities: Set[Multiplier]={},
-                 attack_list: Set[Attack]=[],
-                 parry_effectiveness: Fraction=Fraction(1, 1)):
+                 attack_list: Set[Attack]={},
+                 parry_effectiveness: Fraction=Fraction(1)):
         # variables describing the character's current profile
-        self.name = name
-        self.max_hp = max_hp
-        self.offensive_type_affinities = offensive_type_affinities
-        self.defensive_type_affinities = defensive_type_affinities
-        self.attack_list = attack_list
-        self.parry_effectiveness = parry_effectiveness
+        self._name = name
+        self._max_hp = max_hp
+        self._offensive_type_affinities = offensive_type_affinities
+        self._defensive_type_affinities = defensive_type_affinities
+        self._attack_list = attack_list
+        self._parry_effectiveness = parry_effectiveness
+
+    def get_name(self):
+        return self._name
+
+    def get_max_hp(self):
+        return self._max_hp
+
+    def get_offensive_type_affinities(self) -> Set[Multiplier]:
+        return copy(self._offensive_type_affinities)
+
+    def get_defensive_type_affinities(self) -> Set[Multiplier]:
+        return copy(self._defensive_type_affinities)
+
+    def get_attack_list(self) -> Set[Attack]:
+        return copy(self._defensive_type_affinities)
+
+    def get_parry_effectiveness(self) -> Fraction:
+        return self._parry_effectiveness
 
 
 class CharacterStatus(CharacterSheet):
     def __int__(self,
-                character: CharacterSheet=None,
+                character: CharacterSheet,
+                party: Party,
                 current_hp: int=None):
-        self.current_hp = character.max_hp
-        self.current_sp: int = 0
-        self.current_ap: int = 0
-        self.stagger: bool = False  # This flag is set when a character is staggered. Resets mid-turn
-        self.vulnerability: int = 0
-        self.was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
-        self.is_defending: CharacterStatus = None  # The character this one is defending, if any, or 'None'
-        self.defended_by: CharacterStatus = None
+        CharacterSheet.__init__(self,
+                                character.get_name(),
+                                character.get_max_hp(),
+                                character.get_offensive_type_affinities(),
+                                character.get_defensive_type_affinities(),
+                                character.get_attack_list(),
+                                character.get_parry_effectiveness())
+        self._party = party
+        self._current_hp = current_hp if current_hp is not None else character.get_max_hp()
+        self._current_sp: int = 0
+        self._sp_spent: int = 0
+        self._current_ap: int = 0
+        self._stagger: bool = False  # This flag is set when a character is staggered. Resets mid-turn
+        self._vulnerability: int = 0
+        self._was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
+        self._is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
+        self._defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
+        #TODO: add functionality for death
+        self._dead: bool = False
 
+    def get_defender(self) -> CharacterStatus:
+        return self._defended_by
+
+    def set_was_attacked(self):
+        self._was_attacked = True
+
+    def receive_enemy_damage(self, damage: int):
+        self._current_hp -= damage
+        if self._current_hp <= 0:
+            self._current_hp = 0
+            self._dead = True
+
+    def is_dead(self) -> bool:
+        return self._dead
+
+    # this function performs basic character upkeep at the start of the turn
     def start_turn(self):
         # first, check for any failed parries.
-        if self.defended_by is not None:
-            if self.was_attacked:
-                self.vulnerability = 0
+        if self._defended_by is not None:
+            if self._was_attacked:
+                self._vulnerability = 0
             else:
-                self.vulnerability += 1
-                self.stagger = True
-        elif not self.was_attacked:
-            self.vulnerability = 0
+                self._vulnerability += 1
+                self._stagger = True
+        elif not self._was_attacked:
+            self._vulnerability = 0
 
-        self.current_ap = 100
+        self._current_ap = 100
+        self._sp_spent = 0
 
+    # this function performs basic character upkeep between the execution and planning stages
     def turn_interval(self):
-        if not self.stagger:
-            self.current_sp += self.current_ap
-        self.is_defending = None
-        self.defended_by = None
-        self.stagger = False
+        # calculate sp reduction
+        self._current_sp -= self._sp_spent
 
+        # staggered characters don't get stamina points
+        if not self._stagger:
+            self._current_sp += self._current_ap
+
+        self._is_defending = None
+        self._defended_by = None
+        self._stagger = False
+
+    # this function performs basic character upkeep at the end of the turn
     def end_turn(self):
-        self.was_attacked = False
+        self._was_attacked = False
 
+    def attack_payment(self, ap_cost: int, sp_cost: int, mp_cost: int) -> bool:
+        if self._current_ap < ap_cost:
+            return False
+        elif self._current_sp <= 0:
+            return False
+        elif self._party.get_mp() < mp_cost:
+            return False
+        else:
+            self._current_ap -= ap_cost
+            self._sp_spent = max(self._sp_spent, sp_cost)
+            self._party.spend_mp(mp_cost)
+            return True
 
 class Multiplier(Fraction):
     def __init__(self,

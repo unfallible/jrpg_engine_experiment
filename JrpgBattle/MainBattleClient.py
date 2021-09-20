@@ -17,6 +17,7 @@ class BattleClient(ABC):
     @abstractmethod
     def receive_action_response(self,
                                 response: Attack,
+                                defense: Dict[CharacterStatus, CharacterStatus],
                                 server: PlayerServer,
                                 transaction_id: int):
         pass
@@ -59,6 +60,9 @@ class MainBattleClient(BattleClient):
                                                                                self.transaction_count)
                 self.transaction_count += 1
                 turn += 1
+                for party in self.roster:
+                    if party.is_wiped_out():
+                        pass  # TODO: Implement logic for finishing game
             round += 1
 
     def receive_action_response(self,
