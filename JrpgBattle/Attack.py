@@ -1,30 +1,14 @@
-from enum import Enum
+from __future__ import annotations
+from typing import List, Callable, Set, Tuple, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from enum import IntEnum
 from fractions import Fraction
-from typing import List, Callable, Set, Tuple
 
-from JrpgBattle.Character import CharacterStatus, Multiplier, CharacterSheet
-
-
-class Attack:
-    def __init__(self,
-                 name: str,
-                 base_dmg_func: Callable[[AttackPlan, CharacterStatus], int]=lambda: 0,  # a function returning the attack's base damage
-                 type: AttackType=AttackType.UTILITY,  # the elemental type of the attack
-                 target_range: Tuple[int, int]=(1,1),  # the minimum and maximum (inclusive) number of characters the attack can target
-                 action_point_cost: int=100,  #
-                 stamina_point_cost: int=100,  #
-                 mana_point_cost: int=0):  #
-        self.name = name
-        self.base_dmg_func = base_dmg_func
-        self.type = type
-        self.target_range = target_range
-        self.action_point_cost = action_point_cost
-        self.stamina_point_cost = stamina_point_cost
-        self.mana_point_cost = mana_point_cost
+if TYPE_CHECKING:
+    from JrpgBattle.Character import CharacterStatus
 
 
-
-class AttackType(Enum):
+class AttackType(IntEnum):
     UTILITY = 0
     SLASH = 1
     STAB = 2
@@ -71,6 +55,67 @@ class AttackType(Enum):
         return (attack_type & 8) == 1
 
 
+class Attack(ABC):
+    def __init__(self,
+                 name: str,
+                 attack_type: AttackType=AttackType.UTILITY,  # the elemental type of the attack
+                 target_range: Tuple[int, int]=(1, 1),  # the minimum and maximum (inclusive) number of characters the attack can target
+                 action_point_cost: int=100,  #
+                 stamina_point_cost: int=100,  #
+                 mana_point_cost: int=0):  #
+        self.name = name
+        self.attack_type = attack_type
+        self.target_range = target_range
+        self.action_point_cost = action_point_cost
+        self.stamina_point_cost = stamina_point_cost
+        self.mana_point_cost = mana_point_cost
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_attack_type(self) -> AttackType:
+        return self.attack_type
+
+    def get_target_range(self) -> Tuple[int, int]:
+        return self.target_range
+
+    def get_sp_cost(self) -> int:
+        return self.stamina_point_cost
+
+    def get_mp_cost(self) -> int:
+        return self.mana_point_cost
+
+    @abstractmethod
+    def compute_base_damage(self,
+                            plan: AttackPlan,
+                            target: CharacterStatus) -> int:
+        pass
+
+
+class VanillaAttack(Attack):
+    def __init__(self,
+                 name: str,
+                 attack_type: AttackType = AttackType.UTILITY,  # the elemental type of the attack
+                 # the minimum and maximum (inclusive) number of characters the attack can target
+                 target_range: Tuple[int, int] = (1, 1),
+                 action_point_cost: int = 100,  #
+                 stamina_point_cost: int = 100,  #
+                 mana_point_cost: int = 0,
+                 damage: int = 0):
+        super().__init__(name=name,
+                         attack_type=attack_type,
+                         target_range=target_range,
+                         action_point_cost=action_point_cost,
+                         stamina_point_cost=stamina_point_cost,
+                         mana_point_cost=mana_point_cost)
+        self.damage = damage
+
+    def compute_base_damage(self,
+                            plan: AttackPlan,
+                            target: CharacterStatus) -> int:
+        return self.damage
+
+
 class AttackPlan:
     PENDING = 0
     CANCELLED = 1
@@ -110,8 +155,8 @@ class AttackPlan:
             return
 
         # TODO: Should there be any kind of lock here?
-        self.status = AttackPlan.IN_PROGRESS # the AttackPlan is now executing
-        result = AttackPlan.IN_PROGRESS # Assume the attack missed unless it hits
+        self.status = AttackPlan.IN_PROGRESS  # the AttackPlan is now executing
+        result = AttackPlan.IN_PROGRESS  # Assume the attack missed unless it hits
         for target in self.targets:
             # if the target is dead, update the result and continue looping over targets
             # Note that a missing target counts as neither a hit nor a miss
@@ -126,7 +171,7 @@ class AttackPlan:
             if target.get_defender() is not None:
                 parry_effectiveness = target.get_defender().get_parry_effectiveness()
                 assist_penalty = Fraction(0) if target.get_defender() is target else Fraction(1, 2)
-                parry_multiplier = 1 - (parry_effectiveness ** (assist_penalty + target._vulnerability))
+                parry_multiplier = 1 - (parry_effectiveness ** (assist_penalty + target.get_vulnerability()))
                 if result == AttackPlan.IN_PROGRESS or AttackPlan.NO_TARGET:  # IN_PROGRESS means this is the first target
                     result = AttackPlan.MISS
                 elif result == AttackPlan.HIT:
@@ -152,7 +197,7 @@ class AttackPlan:
                     total_multiplier *= multiplier
 
             # calculate base damage
-            base_damage = self.attack.base_dmg_func(self, target)
+            base_damage = self.attack.compute_base_damage(self, target)
 
             total_damage = base_damage*total_multiplier*parry_multiplier
             target.receive_enemy_damage(total_damage)
@@ -165,7 +210,6 @@ class AttackQueue:
     def __init__(self,
                  entries: List[AttackPlan] = []):
         self._entries = entries
-        self._max_sp_cost =
 
     @property
     def __iter__(self):

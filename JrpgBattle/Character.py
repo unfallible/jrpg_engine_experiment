@@ -1,9 +1,11 @@
+from __future__ import annotations
+from typing import Callable, Set, TYPE_CHECKING
 from copy import copy
 from fractions import Fraction
-from typing import Callable, Set
 
-from JrpgBattle import Party
-from JrpgBattle.Attack import Attack, AttackPlan, AttackQueue
+#from JrpgBattle import Party
+if TYPE_CHECKING:
+    from JrpgBattle.Attack import Attack, AttackPlan, AttackQueue, AttackType
 
 """
 The CharacterSheet descibes the profile of a character without reference
@@ -43,7 +45,7 @@ class CharacterSheet:
         return copy(self._defensive_type_affinities)
 
     def get_attack_list(self) -> Set[Attack]:
-        return copy(self._defensive_type_affinities)
+        return copy(self._attack_list)
 
     def get_parry_effectiveness(self) -> Fraction:
         return self._parry_effectiveness
@@ -71,8 +73,11 @@ class CharacterStatus(CharacterSheet):
         self._was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
         self._is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
         self._defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
-        #TODO: add functionality for death
+        # TODO: add functionality for death
         self._dead: bool = False
+
+    def get_vulnerability(self) -> int:
+        return self._vulnerability
 
     def get_defender(self) -> CharacterStatus:
         return self._defended_by

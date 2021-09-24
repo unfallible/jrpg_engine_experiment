@@ -6,7 +6,7 @@ a request containing their "view" of the game state and the action requested. Wh
 the request, it processes it and sends a response containing the requested action.
 """
 
-from typing import Dict
+from typing import Dict, List
 from abc import ABC, abstractmethod
 
 from JrpgBattle import Party, Attack
@@ -15,17 +15,16 @@ from JrpgBattle.Character import CharacterStatus
 
 class BattleClient(ABC):
     @abstractmethod
-    def receive_action_response(self,
-                                response: Attack,
+    def process_action_response(self,
+                                response: List[Attack],
                                 defense: Dict[CharacterStatus, CharacterStatus],
-                                server: PlayerServer,
                                 transaction_id: int):
         pass
 
 
 class PlayerServer(ABC):
     @abstractmethod
-    def receive_action_request(self,
+    def process_action_request(self,
                                client: BattleClient,
                                transaction_id: int):
         pass
@@ -36,6 +35,7 @@ class MainBattleClient(BattleClient):
                  roster: Dict[Party, PlayerServer]={}):
         self.roster = roster
         self.transaction_count = 0
+        self._transaction_in_progress = False
 
     """
     Runs the game loop for the battle system
@@ -56,19 +56,22 @@ class MainBattleClient(BattleClient):
                 for member in party:
                     member.turn_interval()
                 # once existing plans have been executed, the player plans their next turn
-                party.attack_queue = self.roster[party].receive_action_request(self,
+                self._transaction_in_progress = True
+                party.attack_queue = self.roster[party].process_action_request(self,
                                                                                self.transaction_count)
+                while self._transaction_in_progress:
+                    continue
                 self.transaction_count += 1
+
                 turn += 1
                 for party in self.roster:
                     if party.is_wiped_out():
                         pass  # TODO: Implement logic for finishing game
             round += 1
 
-    def receive_action_response(self,
+    def process_action_response(self,
                                 attacks: Attack,
                                 defense: Dict[CharacterStatus,CharacterStatus],
-                                server: PlayerServer,
                                 transaction_id: int):
         pass
 
