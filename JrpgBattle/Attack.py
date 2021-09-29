@@ -137,6 +137,8 @@ class AttackPlan:
         self.status = status
 
     def execute(self):
+        self.user.publicize_attack(self.attack)
+
         # if the attack was not cancelled then its status should be PENDING
         assert self.status == AttackPlan.PENDING or \
                self.status == AttackPlan.CANCELLED, "Invalid AttackPlan status"
@@ -157,29 +159,25 @@ class AttackPlan:
         # TODO: Should there be any kind of lock here?
         self.status = AttackPlan.IN_PROGRESS  # the AttackPlan is now executing
         result = AttackPlan.IN_PROGRESS  # Assume the attack missed unless it hits
+        swings = 0  # the number of targets the attack has been used against
+        hits = 0  # the number of targets the attack has hit
         for target in self.targets:
             # if the target is dead, update the result and continue looping over targets
             # Note that a missing target counts as neither a hit nor a miss
             if target.is_dead():
-                result = AttackPlan.NO_TARGET if result == AttackPlan.IN_PROGRESS else result
                 continue
             # since the attack is being used, mark the target as attacked
             target.set_was_attacked()
+            swings += 1
 
-            # now check if the target parried
+            # now check if the target is being defended
             parry_multiplier = Fraction(1, 1)
-            if target.get_defender() is not None:
+            if target.get_defender() is None:
+                hits += 1
+            else:
                 parry_effectiveness = target.get_defender().get_parry_effectiveness()
                 assist_penalty = Fraction(0) if target.get_defender() is target else Fraction(1, 2)
                 parry_multiplier = 1 - (parry_effectiveness ** (assist_penalty + target.get_vulnerability()))
-                if result == AttackPlan.IN_PROGRESS or AttackPlan.NO_TARGET:  # IN_PROGRESS means this is the first target
-                    result = AttackPlan.MISS
-                elif result == AttackPlan.HIT:
-                    result = AttackPlan.PARTIAL_HIT
-            elif result == AttackPlan.IN_PROGRESS or AttackPlan.NO_TARGET:
-                result = AttackPlan.HIT
-            elif result == AttackPlan.MISS:
-                result = AttackPlan.PARTIAL_HIT
 
             # if parry was perfect, just skip the rest of the attack calculations
             if parry_multiplier <= 0:
@@ -191,10 +189,12 @@ class AttackPlan:
             for multiplier in self.user.get_offensive_type_affinities():
                 if multiplier.is_relevant(self):
                     total_multiplier *= multiplier
+                    self.user.publicize_attack_multiplier(multiplier)
             # aggregate defensive multipliers
             for multiplier in target.get_defensive_type_affinities():
                 if multiplier.is_relevant(self):
                     total_multiplier *= multiplier
+                    target.publicize_defense_multiplier(multiplier)
 
             # calculate base damage
             base_damage = self.attack.compute_base_damage(self, target)
@@ -203,7 +203,14 @@ class AttackPlan:
             target.receive_enemy_damage(total_damage)
 
         #after processing all targets, update the attack's status with the result
-        self.status = result
+        if swings == 0:
+            self.status = AttackPlan.NO_TARGET
+        elif hits == 0:
+            self.status = AttackPlan.MISS
+        elif hits == swings:
+            self.status = AttackPlan.HIT
+        else:
+            self.status = AttackPlan.PARTIAL_HIT
 
 
 class AttackQueue:

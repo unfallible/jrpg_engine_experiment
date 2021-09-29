@@ -1,0 +1,69 @@
+@startuml
+class CharacterTemplate {
+    str name
+    int max_hp
+    Set[Multiplier] offensive_type_affinities
+    Set[Multiplier] defensive_type_affinities
+    Set[Attack] attack_list
+    Fraction parry_effectiveness
+    get_name()
+    get_max_hp()
+    Set[Multiplier] get_offensive_type_affinities()
+    Set[Multiplier] get_defensive_type_affinities()
+    Set[Attack] get_attack_list()
+    Fraction get_parry_effectiveness()
+}
+class CharacterStatus {
+	Party party
+	int current_hp
+	int current_sp
+	int sp_spent
+	int current_ap
+	bool stagger
+	int vulnerability
+	bool was_attacked
+	CharacterStatus is_defending
+	CharacterStatus defended_by
+	bool dead
+	CharacterStatus get_defender()
+	void set_was_attacked()
+	receive_enemy_damage(int damage)
+	bool is_dead()
+	start_turn()
+	turn_interval()
+	end_turn()
+	bool attack_payment()
+}
+
+class PublicCharacterView {
+    str get_name()
+    Party get_party()
+    int get_vulnerability()
+    int get_damage()
+    int get_sp()
+    int get_sp_spent()
+    int get_ap()
+    Set[Attack] get_public_attack_list()
+    Set[Multiplier] get_public_offensive_multipliers()
+    Set[Multiplier] get_public_defensive_multipliers()
+    bool was_attacked()
+    bool is_staggered()
+    bool is_dead()
+}
+
+class PrivateCharacterView {
+    int get_max_hp()
+    Set[Multiplier] get_offensive_multipliers()
+    Set[Multiplier] get_defensive_multipliers()
+    Set[Attack] get_attack_list()
+    Fraction get_parry_effectiveness()
+    int get_current_hp()
+    CharacterStatus get_is_defending()
+    CharacterStatus get_defended_by()
+}
+
+CharacterTemplate <|-- CharacterStatus
+CharacterStatus <-- PublicCharacterView
+PublicCharacterView <|-- PrivateCharacterView
+
+@enduml

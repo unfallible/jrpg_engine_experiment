@@ -1,7 +1,10 @@
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Callable
 
 from JrpgBattle.Attack import AttackQueue
 from JrpgBattle.Character import CharacterStatus
+
+def redacted(func: Callable) -> Callable:
+    def redacted(*args, **kwargs):
 
 
 class Party:

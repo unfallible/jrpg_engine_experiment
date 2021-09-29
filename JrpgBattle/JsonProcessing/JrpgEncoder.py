@@ -1,7 +1,7 @@
 # from json import JSONEncoder
 import json
 from fractions import Fraction
-from JrpgBattle.Character import CharacterSheet, Multiplier
+from JrpgBattle.Character import CharacterTemplate, Multiplier
 from JrpgBattle.Attack import Attack, VanillaAttack
 from typing import Dict
 
@@ -12,10 +12,10 @@ def encode_jrpg_data(obj):
     if isinstance(obj, Fraction):
         print('got there')
         return (obj.numerator, obj.denominator)
-    elif isinstance(obj, CharacterSheet):
-        return {'__class__': CharacterSheet.__name__,
-                'name': obj._name,
-                'max_hp': obj._max_hp,
+    elif isinstance(obj, CharacterTemplate):
+        return {'__class__': CharacterTemplate.__name__,
+                'name': obj.name,
+                'max_hp': obj.max_hp,
                 'offensive_type_affinities': list(obj.get_offensive_type_affinities()),
                 'defensive_type_affinities': list(obj.get_defensive_type_affinities()),
                 'attack_list': list(obj.get_attack_list()),
@@ -40,8 +40,8 @@ def decode_jrpg_data(dict: Dict):
                              stamina_point_cost=dict['sp_cost'],
                              mana_point_cost=dict['mp_cost'],
                              damage=dict['damage'])
-    elif dict['__class__'] == CharacterSheet.__name__:
-        return CharacterSheet(name=dict['name'],
-                              max_hp=dict['max_hp'],
-                              offensive_type_affinities=dict['offensive_type_affinities'],
-                              defensive_type_affinities=dict['defensive_type_affinities'],)
+    elif dict['__class__'] == CharacterTemplate.__name__:
+        return CharacterTemplate(name=dict['name'],
+                                 max_hp=dict['max_hp'],
+                                 offensive_type_affinities=dict['offensive_type_affinities'],
+                                 defensive_type_affinities=dict['defensive_type_affinities'], )

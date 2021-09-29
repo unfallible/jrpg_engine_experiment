@@ -74,10 +74,3 @@ class MainBattleClient(BattleClient):
                                 defense: Dict[CharacterStatus,CharacterStatus],
                                 transaction_id: int):
         pass
-
-
-
-
-class PlayerView:
-    def __int__(self):
-        pass
