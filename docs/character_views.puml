@@ -13,7 +13,14 @@ class CharacterTemplate {
     Set[Attack] get_attack_list()
     Fraction get_parry_effectiveness()
 }
+
+abstract class CharacterIdentifier {
+    {abstract} str get_character_name()
+    bool __eq__()
+}
+
 class CharacterStatus {
+    str character_name
 	Party party
 	int current_hp
 	int current_sp
@@ -36,7 +43,7 @@ class CharacterStatus {
 }
 
 class PublicCharacterView {
-    str get_name()
+    str get_character_name()
     Party get_party()
     int get_vulnerability()
     int get_damage()
@@ -52,6 +59,7 @@ class PublicCharacterView {
 }
 
 class PrivateCharacterView {
+    str get_template_name()
     int get_max_hp()
     Set[Multiplier] get_offensive_multipliers()
     Set[Multiplier] get_defensive_multipliers()
@@ -62,8 +70,10 @@ class PrivateCharacterView {
     CharacterStatus get_defended_by()
 }
 
+CharacterIdentifier <|-- CharacterStatus
+CharacterIdentifier <|-- PublicCharacterView
 CharacterTemplate <|-- CharacterStatus
-CharacterStatus <-- PublicCharacterView
+PublicCharacterView --> CharacterStatus
 PublicCharacterView <|-- PrivateCharacterView
 
 @enduml

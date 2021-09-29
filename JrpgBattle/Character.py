@@ -1,4 +1,5 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from typing import Callable, Set, TYPE_CHECKING
 from copy import copy
 from fractions import Fraction
@@ -25,15 +26,15 @@ class CharacterTemplate:
                  attack_list: Set[Attack]={},
                  parry_effectiveness: Fraction=Fraction(1)):
         # variables describing the character's current profile
-        self.name = name
+        self.template_name = name
         self.max_hp = max_hp
         self.offensive_type_affinities = offensive_type_affinities
         self.defensive_type_affinities = defensive_type_affinities
         self.attack_list = attack_list
         self.parry_effectiveness = parry_effectiveness
 
-    def get_name(self):
-        return self.name
+    def get_template_name(self):
+        return self.template_name
 
     def get_max_hp(self):
         return self.max_hp
@@ -51,18 +52,30 @@ class CharacterTemplate:
         return self.parry_effectiveness
 
 
-class CharacterStatus(CharacterTemplate):
+class CharacterIdentifier(ABC):
+    @abstractmethod
+    def get_character_name(self) -> str:
+        pass
+
+    def __eq__(self, other):
+        return isinstance(other, CharacterIdentifier) and \
+               self.get_character_name() == other.get_character_name()
+
+
+class CharacterStatus(CharacterTemplate, CharacterIdentifier):
     def __int__(self,
                 character: CharacterTemplate,
+                name: str,
                 party: Party,
                 current_hp: int=None):
         CharacterTemplate.__init__(self,
-                                   character.get_name(),
+                                   character.get_template_name(),
                                    character.get_max_hp(),
                                    character.get_offensive_type_affinities(),
                                    character.get_defensive_type_affinities(),
                                    character.get_attack_list(),
                                    character.get_parry_effectiveness())
+        self.character_name = name
         self.party = party
         self.current_hp = current_hp if current_hp is not None else character.get_max_hp()
         self.current_sp: int = 0
@@ -78,6 +91,9 @@ class CharacterStatus(CharacterTemplate):
         self.public_defensive_multipliers = set()
         # TODO: add functionality for death
         self.dead: bool = False
+
+    def get_character_name(self) -> str:
+        return self.character_name
 
     def publicize_attack(self, attack: Attack):
         assert attack in self.attack_list

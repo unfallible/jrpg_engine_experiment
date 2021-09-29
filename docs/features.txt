@@ -1,0 +1,16 @@
+MVP:
+    Each character can attack or rest, and parry or not parry
+    Rest gives the character 1 SP, attacking costs 1 SP
+    If the character is attacked while parrying, the attack is negated
+    If the character is not attacked while parrying, the character misses their next turn
+    If the character is not attacked while parrying, the character's parry is less effect the next turn
+    When all of a player's characters run out of HP, that player loses
+
+Extra features:
+    Attacks have different types, and different characters are stronger or weaker when attacking with or being attacked
+    by certain types of attacks
+    Different attacks cost different amounts of SP
+    Attacks can cost a certain number of AP, which determines how many attacks can be used per turn
+    Characters can defend their allies in addition to themselves
+    Some attacks can hit multiple characters
+    Parties have a shared MP resource, which certain attacks can spend

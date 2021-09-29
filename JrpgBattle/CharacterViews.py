@@ -1,13 +1,13 @@
 from typing import Set, TYPE_CHECKING
 from fractions import Fraction
 from copy import copy
-from JrpgBattle.Character import CharacterStatus, Multiplier
+from JrpgBattle.Character import CharacterStatus, Multiplier, CharacterIdentifier
 if TYPE_CHECKING:
     from JrpgBattle.Attack import Attack
     from JrpgBattle.Party import Party
 
 
-class PublicCharacterView:
+class PublicCharacterView(CharacterIdentifier):
     """
     PublicCharacterView objects provide views of CharacterStatus objects
     without methods for easily modifying them. Its interface also provides
@@ -21,8 +21,8 @@ class PublicCharacterView:
     def __int__(self, character: CharacterStatus):
         self._character = character
 
-    def get_name(self) -> str:
-        return self._character.get_name()
+    def get_character_name(self) -> str:
+        return self._character.character_name
 
     def get_party(self) -> Party:
         return self._character.party
@@ -63,4 +63,31 @@ class PublicCharacterView:
 
 class PrivateCharacterView(PublicCharacterView):
     def __init__(self, character: CharacterStatus):
-        super.__init__(character)
+        super().__init__(character)
+
+    def get_template_name(self) -> str:
+        return self._character.template_name
+
+    def get_max_hp(self) -> int:
+        return self._character.max_hp
+
+    def get_offensive_multipliers(self) -> Set[Multiplier]:
+        return self._character.offensive_type_affinities
+
+    def get_defensive_multipliers(self) -> Set[Multiplier]:
+        return self._character.defensive_type_affinities
+
+    def get_attack_list(self) -> Set[Attack]:
+        return self._character.attack_list
+
+    def get_parry_effectiveness(self) -> Fraction:
+        return self._character.parry_effectiveness
+
+    def get_current_hp(self) -> int:
+        return self._character.current_hp
+
+    def get_is_defending(self) -> CharacterStatus:
+        return self._character.is_defending
+
+    def get_defended_by(self) -> CharacterStatus:
+        return self._character.defended_by

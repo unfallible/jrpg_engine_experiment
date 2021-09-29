@@ -14,7 +14,7 @@ def encode_jrpg_data(obj):
         return (obj.numerator, obj.denominator)
     elif isinstance(obj, CharacterTemplate):
         return {'__class__': CharacterTemplate.__name__,
-                'name': obj.name,
+                'template_name': obj.template_name,
                 'max_hp': obj.max_hp,
                 'offensive_type_affinities': list(obj.get_offensive_type_affinities()),
                 'defensive_type_affinities': list(obj.get_defensive_type_affinities()),
@@ -23,7 +23,7 @@ def encode_jrpg_data(obj):
                 }
     elif isinstance(obj, VanillaAttack):
         return {'__class__': VanillaAttack.__name__,
-                'name': obj.get_name(),
+                'template_name': obj.get_name(),
                 'type': obj.get_attack_type(),
                 'target_range': obj.get_target_range(),
                 'sp_cost': obj.get_sp_cost(),
@@ -34,14 +34,14 @@ def encode_jrpg_data(obj):
 
 def decode_jrpg_data(dict: Dict):
     if dict['__class__'] == VanillaAttack.__name__:
-        return VanillaAttack(name=dict['name'],
+        return VanillaAttack(name=dict['template_name'],
                              attack_type=dict['type'],
                              target_range=dict['target_range'],
                              stamina_point_cost=dict['sp_cost'],
                              mana_point_cost=dict['mp_cost'],
                              damage=dict['damage'])
     elif dict['__class__'] == CharacterTemplate.__name__:
-        return CharacterTemplate(name=dict['name'],
+        return CharacterTemplate(name=dict['template_name'],
                                  max_hp=dict['max_hp'],
                                  offensive_type_affinities=dict['offensive_type_affinities'],
                                  defensive_type_affinities=dict['defensive_type_affinities'], )
