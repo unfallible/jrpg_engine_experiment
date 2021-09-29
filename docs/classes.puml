@@ -1,0 +1,67 @@
+@startuml
+class CharacterTemplate {
+    str name
+    int max_hp
+    Set[Multiplier] offensive_type_affinities
+    Set[Multiplier] defensive_type_affinities
+    Set[Attack] attack_list
+    Fraction parry_effectiveness
+    get_name()
+    get_max_hp()
+    Set[Multiplier] get_offensive_type_affinities()
+    Set[Multiplier] get_defensive_type_affinities()
+    Set[Attack] get_attack_list()
+    Fraction get_parry_effectiveness()
+}
+class CharacterStatus {
+	Party party
+	int current_hp
+	int current_sp
+	int sp_spent
+	int current_ap
+	bool stagger
+	int vulnerability
+	bool was_attacked
+	CharacterStatus is_defending
+	CharacterStatus defended_by
+	bool dead
+	CharacterStatus get_defender()
+	void set_was_attacked()
+	receive_enemy_damage(int damage)
+	bool is_dead()
+	start_turn()
+	turn_interval()
+	end_turn()
+	bool attack_payment()
+}
+class Fraction
+class Multiplier
+class Party {
+    List[CharacterStatus] characters
+    List[AttackQueue] attack_queue
+    int current_mp
+    bool is_wiped_out()
+    int get_mp()
+    int spend_mp(int cost)
+}
+
+Party "1" *-- "1..*" CharacterStatus
+CharacterTemplate <|-- CharacterStatus
+Fraction <|-- Multiplier
+CharacterTemplate o-- Multiplier
+
+class PlayerView {
+    List[PartyView] roster
+    Party team
+}
+
+class PlayerServer {
+    process_action_request(BattleClient client, int transaction_id)
+    process_view_response(int transaction_id,
+}
+
+class BattleClient {
+    def process_action_response(List[Attack] response, Dict[CharacterStatus, CharacterStatus] defense, int transaction_id)
+    process_view_request(PlayerServer requester, int transaction_id)
+}
+@enduml
