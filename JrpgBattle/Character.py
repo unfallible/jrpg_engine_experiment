@@ -6,7 +6,7 @@ from fractions import Fraction
 
 #from JrpgBattle import Party
 if TYPE_CHECKING:
-    from JrpgBattle.Attack import Attack, AttackPlan, AttackQueue, AttackType
+    from JrpgBattle.Attack import Attack, DetailedAttackPlan, AttackQueue, AttackType
 
 """
 The CharacterTemplate descibes the profile of a character without reference
@@ -60,6 +60,9 @@ class CharacterIdentifier(ABC):
     def __eq__(self, other):
         return isinstance(other, CharacterIdentifier) and \
                self.get_character_name() == other.get_character_name()
+
+    def __hash__(self):
+        return hash(self.get_character_name())
 
 
 class CharacterStatus(CharacterTemplate, CharacterIdentifier):
@@ -179,6 +182,6 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
 class Multiplier(Fraction):
     def __init__(self,
                  multiplier: Fraction,
-                 is_relevant: Callable[[AttackPlan], bool]):
+                 is_relevant: Callable[[DetailedAttackPlan], bool]):
         Fraction.__init__(multiplier)
         self.is_relevant = is_relevant

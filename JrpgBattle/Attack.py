@@ -5,7 +5,7 @@ from enum import IntEnum
 from fractions import Fraction
 
 if TYPE_CHECKING:
-    from JrpgBattle.Character import CharacterStatus
+    from JrpgBattle.Character import CharacterStatus, CharacterIdentifier
 
 
 class AttackType(IntEnum):
@@ -73,6 +73,12 @@ class Attack(ABC):
     def get_name(self) -> str:
         return self.name
 
+    def __eq__(self, other):
+        return isinstance(other, Attack) and self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
+
     def get_attack_type(self) -> AttackType:
         return self.attack_type
 
@@ -87,9 +93,19 @@ class Attack(ABC):
 
     @abstractmethod
     def compute_base_damage(self,
-                            plan: AttackPlan,
+                            plan: DetailedAttackPlan,
                             target: CharacterStatus) -> int:
         pass
+
+
+class AttackPlan:
+    def __init__(self,
+                 user: CharacterIdentifier,
+                 attack: Attack,
+                 targets: Set[CharacterIdentifier]):
+        self.user = user
+        self.attack = attack
+        self.targets = targets
 
 
 class VanillaAttack(Attack):
@@ -111,12 +127,12 @@ class VanillaAttack(Attack):
         self.damage = damage
 
     def compute_base_damage(self,
-                            plan: AttackPlan,
+                            plan: DetailedAttackPlan,
                             target: CharacterStatus) -> int:
         return self.damage
 
 
-class AttackPlan:
+class DetailedAttackPlan:
     PENDING = 0
     CANCELLED = 1
     IN_PROGRESS = 2
@@ -140,12 +156,12 @@ class AttackPlan:
         self.user.publicize_attack(self.attack)
 
         # if the attack was not cancelled then its status should be PENDING
-        assert self.status == AttackPlan.PENDING or \
-               self.status == AttackPlan.CANCELLED, "Invalid AttackPlan status"
+        assert self.status == DetailedAttackPlan.PENDING or \
+               self.status == DetailedAttackPlan.CANCELLED, "Invalid DetailedAttackPlan status"
 
         # start by checking that the attack is still scheduled
-        if self.status == AttackPlan.CANCELLED:
-            self.status = AttackPlan.SKIPPED
+        if self.status == DetailedAttackPlan.CANCELLED:
+            self.status = DetailedAttackPlan.SKIPPED
             return
 
         # Now process the payment for the attack
@@ -153,12 +169,12 @@ class AttackPlan:
                                                       self.attack.stamina_point_cost,
                                                       self.attack.mana_point_cost)
         if not payment_successful:
-            self.status = AttackPlan.SKIPPED
+            self.status = DetailedAttackPlan.SKIPPED
             return
 
         # TODO: Should there be any kind of lock here?
-        self.status = AttackPlan.IN_PROGRESS  # the AttackPlan is now executing
-        result = AttackPlan.IN_PROGRESS  # Assume the attack missed unless it hits
+        self.status = DetailedAttackPlan.IN_PROGRESS  # the DetailedAttackPlan is now executing
+        result = DetailedAttackPlan.IN_PROGRESS  # Assume the attack missed unless it hits
         swings = 0  # the number of targets the attack has been used against
         hits = 0  # the number of targets the attack has hit
         for target in self.targets:
@@ -204,18 +220,18 @@ class AttackPlan:
 
         #after processing all targets, update the attack's status with the result
         if swings == 0:
-            self.status = AttackPlan.NO_TARGET
+            self.status = DetailedAttackPlan.NO_TARGET
         elif hits == 0:
-            self.status = AttackPlan.MISS
+            self.status = DetailedAttackPlan.MISS
         elif hits == swings:
-            self.status = AttackPlan.HIT
+            self.status = DetailedAttackPlan.HIT
         else:
-            self.status = AttackPlan.PARTIAL_HIT
+            self.status = DetailedAttackPlan.PARTIAL_HIT
 
 
 class AttackQueue:
     def __init__(self,
-                 entries: List[AttackPlan] = []):
+                 entries: List[DetailedAttackPlan] = []):
         self._entries = entries
 
     @property
@@ -223,10 +239,10 @@ class AttackQueue:
         return self._entries.__iter__()
 
     # Add a plan to the attack queue
-    def enqueue(self, plan: AttackPlan):
+    def enqueue(self, plan: DetailedAttackPlan):
         self._entries[len(self._entries)] = plan
 
     # Filter plans out of the attack queue and return a new, filtered version
     def filter_queue(self,
-                     attack_filter: Callable[[AttackPlan], bool]) -> AttackQueue:
+                     attack_filter: Callable[[DetailedAttackPlan], bool]) -> AttackQueue:
         return AttackQueue([plan for plan in self._entries if attack_filter(plan)])

@@ -1,3 +1,7 @@
+Next steps:
+    Finish drafting out MainBattleClient's process_action_response() method
+    Hammer out relationship between PlayerServer and Party
+
 MVP:
     Each character can attack or rest, and parry or not parry
     Rest gives the character 1 SP, attacking costs 1 SP
