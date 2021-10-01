@@ -1,6 +1,7 @@
 from abc import ABC
+from typing import Iterator
 
-from JrpgBattle.Party import Party
+from JrpgBattle.Party import Party, PartyIdentifier
 from JrpgBattle.CharacterViews import PublicCharacterView, PrivateCharacterView
 
 """
@@ -12,8 +13,10 @@ TODO: Since the Private and Public PartyViews are only contain getters, it may b
 the Private view to extend the Public view. It's at least worth investigating
 """
 
-class PartyView(ABC):
+
+class PartyView(ABC, PartyIdentifier):
     def __init__(self, party: Party):
+        PartyIdentifier.__init__(self, party.name)
         self._party = party
 
     def is_wiped_out(self) -> bool:
@@ -28,7 +31,7 @@ class PublicPartyView(PartyView):
         super(PublicPartyView, self).__init__(party)
         
     @property
-    def __iter__(self) -> PublicCharacterView:
+    def __iter__(self) -> Iterator[PublicCharacterView]:
         for character in self._party:
             yield PublicCharacterView(character)
 
@@ -38,6 +41,6 @@ class PrivatePartyView(PartyView):
         super(PublicPartyView, self).__init__(party)
 
     @property
-    def __iter__(self) -> PrivateCharacterView:
+    def __iter__(self) -> Iterator[PrivateCharacterView]:
         for character in self._party:
             yield PrivateCharacterView(character)

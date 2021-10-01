@@ -1,0 +1,5 @@
+@startuml
+class BattleClient {
+    int process_action_response(int transaction_id, AttackQueue response)
+}
+@enduml

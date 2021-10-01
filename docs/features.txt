@@ -1,4 +1,10 @@
 Next steps:
+    Replace transaction ids with PartyIdentifiers (assumes one transaction per party)
+    Finish drafting out ConcretePlayerServer
+    Implement BattleClient request processing
+    TESTS!
+
+Done:
     Finish drafting out MainBattleClient's process_action_response() method
     Hammer out relationship between PlayerServer and Party
 
@@ -17,4 +23,5 @@ Extra features:
     Attacks can cost a certain number of AP, which determines how many attacks can be used per turn
     Characters can defend their allies in addition to themselves
     Some attacks can hit multiple characters
+    Attacks should hit multiple characters "simultaneously"
     Parties have a shared MP resource, which certain attacks can spend

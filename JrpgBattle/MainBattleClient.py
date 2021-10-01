@@ -1,6 +1,6 @@
 """
 The BattleClient class runs the main game loop for the battle system.
-It maintains a list of each player of the game, and their respective parties and their PlayerServer.
+It maintains a list of each player of the game, and their respective roster and their PlayerServer.
 When the game reaches a point where player input is required, the BattleClient sends the PlayerServer
 a request containing their "view" of the game state and the action requested. When the PlayerServer receives
 the request, it processes it and sends a response containing the requested action.
@@ -10,10 +10,10 @@ from __future__ import annotations
 from typing import Dict, List, Tuple, Set
 from abc import ABC, abstractmethod
 
-from JrpgBattle.Party import Party
+from JrpgBattle.Party import Party, PartyIdentifier
 from JrpgBattle.Character import CharacterStatus, CharacterIdentifier, CharacterTemplate
 from JrpgBattle.PartyViews import PrivatePartyView, PublicPartyView
-from JrpgBattle.Attack import AttackPlan, AttackQueue
+from JrpgBattle.Attack import AttackPlan, AttackQueue, DetailedAttackPlan
 
 
 class BattleClient(ABC):
@@ -47,6 +47,7 @@ class PlayerServer(ABC):
     @abstractmethod
     def process_action_request(self,
                                client: BattleClient,
+                               party_id: PartyIdentifier,
                                transaction_id: int) -> int:
         pass
 
@@ -65,14 +66,38 @@ class PlayerServer(ABC):
         pass
 
 
+class PlayerProfile:
+    def __init__(self, player_id: int, party: Party, server: PlayerServer):
+        self.party = party
+        self.server = server
+
+    def __eq__(self, other):
+        return isinstance(other, PlayerProfile) and self.party == other.party
+
+    def __hash__(self):
+        return hash(self.party)
+
+
 class MainBattleClient(BattleClient):
-    def __init__(self,
-                 roster: Dict[Party, PlayerServer] = {}):
-        self.parties = roster
-        self.players = {roster[party]: party for party in roster}
-        assert len(self.players) == len(self.parties)
+    # def __init__(self,
+    #              roster: Set[Tuple[Party, PlayerServer]] = set()):
+    def __init__(self):
+        self.roster: List[PlayerProfile] = []
+        self.characters_ids: Dict[CharacterIdentifier, CharacterStatus] = {}
+        self.party_ids: Dict[PartyIdentifier, Party] = {}
         self.transaction_count = 0
         self.open_transactions: Dict[int, Party] = {}
+
+    def register_party(self, party: Party, server: PlayerServer) -> int:
+        new_player = PlayerProfile(party, server)
+        if new_player in self.roster or set(party.characters) & set(self.characters_ids):
+            return BattleClient.ERROR
+        self.roster.append(new_player)
+        self.party_ids[party] = party
+        # TODO: Find better way to add the character ids
+        for character in party:
+            self.characters_ids[character] = character
+        return BattleClient.SUCCESS
 
     """
     Runs the game loop for the battle system. 
@@ -85,26 +110,26 @@ class MainBattleClient(BattleClient):
         turn = 1
         while True:
             # loop every player once per round
-            for party in self.parties:
+            for player in self.roster:
                 # start turn by executing existing plans
-                for member in party:
+                for member in player.party:
                     member.start_turn()
 
-                for plan in party.attack_queue:
+                for plan in player.party.attack_queue:
                     plan.execute()
 
-                for member in party:
+                for member in player.party:
                     member.turn_interval()
                 # once existing plans have been executed, the player plans their next turn
-                self.open_transactions[self.transaction_count] = self.parties[party]  # open transaction for the player
-                party.attack_queue = self.parties[party].process_action_request(self, self.transaction_count)
+                self.open_transactions[self.transaction_count] = self.roster[party]  # open transaction for the player
+                party.attack_queue = player.server.process_action_request(self, self.transaction_count)
                 while self.open_transactions:
                     continue
                 self.transaction_count += 1
 
                 turn += 1
-                for party in self.parties:
-                    if party.is_wiped_out():
+                for party in self.roster:
+                    if party.party.is_wiped_out():
                         pass  # TODO: Implement logic for finishing game
             round += 1
 
@@ -116,7 +141,10 @@ class MainBattleClient(BattleClient):
         new_plans: AttackQueue = AttackQueue()
         for plan in response:
             if self.validate_attack_plan(plan):
-                pass
+                detailed_plan = DetailedAttackPlan(plan.attack,
+                                                   self.characters_ids[plan.user],
+                                                   {self.characters_ids[target] for target in plan.targets})
+                self.validate_attack_plan(plan, self.open_transactions[transaction_id])
             else:
                 return BattleClient.ERROR
         party.attack_queue = new_plans
@@ -127,13 +155,14 @@ class MainBattleClient(BattleClient):
         # It is ESSENTIAL that attack validation only uses information available to the player who set the plan
         if plan.user not in user_party:
             return False
-        user_status = user_party.get_status(plan.user)
+        # user_status = user_party.get_status(plan.user)
+        user_status = self.characters_ids[plan.user]
         if plan.attack not in user_status.get_attack_list():
             return False
         # TODO: This loop is pretty harmless but it looks really gross
-        # TODO: Consider adding logic to Attacks and Character to perform some validation
+        # TODO: Consider adding logic to the Attack and Character classes to perform some validation
         for target in plan.targets:
-            for party in self.parties:
+            for party in self.roster:
                 if target not in party:
                     return False
         return True
