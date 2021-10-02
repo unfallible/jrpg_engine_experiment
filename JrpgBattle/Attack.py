@@ -92,6 +92,10 @@ class Attack(ABC):
         return self.mana_point_cost
 
     @abstractmethod
+    def get_power(self) -> str:
+        pass
+
+    @abstractmethod
     def compute_base_damage(self,
                             plan: DetailedAttackPlan,
                             target: CharacterStatus) -> int:
@@ -130,6 +134,9 @@ class VanillaAttack(Attack):
                             plan: DetailedAttackPlan,
                             target: CharacterStatus) -> int:
         return self.damage
+
+    def get_power(self) -> str:
+        return str(self.damage)
 
 
 class DetailedAttackPlan:

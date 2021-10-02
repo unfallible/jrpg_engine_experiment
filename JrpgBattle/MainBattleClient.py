@@ -54,14 +54,12 @@ class PlayerServer(ABC):
     @abstractmethod
     def process_team_response(self,
                               team: PrivatePartyView,
-                              client: BattleClient,
                               transaction_id: int) -> int:
         pass
 
     @abstractmethod
     def process_enemy_response(self,
                                enemy: PublicPartyView,
-                               client: BattleClient,
                                transaction_id: int) -> int:
         pass
 
@@ -137,19 +135,41 @@ class MainBattleClient(BattleClient):
                                 response: List[AttackPlan],
                                 defense: Dict[CharacterIdentifier, CharacterIdentifier],
                                 transaction_id: int) -> int:
-        party = self.players[self.open_transactions[transaction_id]]
         new_plans: AttackQueue = AttackQueue()
         for plan in response:
+            # first validate each plan
             if self.validate_attack_plan(plan):
+                self.validate_attack_plan(plan, self.open_transactions[transaction_id])
+                # if the plan is valid, add queue it up for next turn
                 detailed_plan = DetailedAttackPlan(plan.attack,
                                                    self.characters_ids[plan.user],
                                                    {self.characters_ids[target] for target in plan.targets})
-                self.validate_attack_plan(plan, self.open_transactions[transaction_id])
+                new_plans.enqueue(detailed_plan)
             else:
+                # if the plan is invalid, return an error
                 return BattleClient.ERROR
+        # now look up the party associated with the action request
+        party = self.players[self.open_transactions[transaction_id]]
+        # set the party's plans for next turn, then close the transaction
         party.attack_queue = new_plans
         self.open_transactions.pop(transaction_id)
         return BattleClient.SUCCESS
+
+    def process_team_request(self,
+                             server: PlayerServer,
+                             transaction_id: int):
+        team = next(profile.party for profile in self.roster if profile.server is server)
+        team_view = PrivatePartyView(team)
+        rval = server.process_team_response(team_view, transaction_id)
+        return rval
+
+    def process_enemy_request(self,
+                              server: PlayerServer,
+                              transaction_id: int):
+        enemy = next(profile.party for profile in self.roster if profile.server is server)
+        enemy_view = PublicPartyView(enemy)
+        rval = server.process_enemy_response(enemy_view, transaction_id)
+        return rval
 
     def validate_attack_plan(self, plan: AttackPlan, user_party: Party) -> bool:
         # It is ESSENTIAL that attack validation only uses information available to the player who set the plan

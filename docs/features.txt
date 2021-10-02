@@ -2,6 +2,8 @@ Next steps:
     Replace transaction ids with PartyIdentifiers (assumes one transaction per party)
     Finish drafting out ConcretePlayerServer
     Implement BattleClient request processing
+    Document final client/server interfaces
+    reorganize DetailedAttackPlan.execute
     TESTS!
 
 Done:
