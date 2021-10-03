@@ -1,12 +1,13 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import Callable, Set, TYPE_CHECKING
+from typing import Callable, Set, TYPE_CHECKING, MutableSet
 from copy import copy
 from fractions import Fraction
 
-#from JrpgBattle import Party
+from JrpgBattle.IdentifierSet import Identifier
+
 if TYPE_CHECKING:
-    from JrpgBattle.Attack import Attack, DetailedAttackPlan, AttackQueue, AttackType
+    from JrpgBattle.Party import Party
+    from JrpgBattle.Attack import Attack, DetailedAttackPlan
 
 """
 The CharacterTemplate descibes the profile of a character without reference
@@ -21,10 +22,10 @@ class CharacterTemplate:
     def __init__(self,
                  name: str,
                  max_hp: int,
-                 offensive_type_affinities: Set[Multiplier]={},
-                 defensive_type_affinities: Set[Multiplier]={},
-                 attack_list: Set[Attack]={},
-                 parry_effectiveness: Fraction=Fraction(1)):
+                 offensive_type_affinities: Set[Multiplier] = frozenset(),
+                 defensive_type_affinities: Set[Multiplier] = frozenset(),
+                 attack_list: Set[Attack] = frozenset(),
+                 parry_effectiveness: Fraction = Fraction(1)):
         # variables describing the character's current profile
         self.template_name = name
         self.max_hp = max_hp
@@ -52,25 +53,23 @@ class CharacterTemplate:
         return self.parry_effectiveness
 
 
-class CharacterIdentifier(ABC):
-    @abstractmethod
-    def get_character_name(self) -> str:
-        pass
+class CharacterIdentifier(Identifier):
+    DOMAIN: str = "character"
 
-    def __eq__(self, other):
-        return isinstance(other, CharacterIdentifier) and \
-               self.get_character_name() == other.get_character_name()
+    def __init__(self, name: str):
+        super().__init__(name)
 
-    def __hash__(self):
-        return hash(self.get_character_name())
+    def get_domain(self) -> object:
+        return CharacterIdentifier.DOMAIN
 
 
 class CharacterStatus(CharacterTemplate, CharacterIdentifier):
-    def __int__(self,
-                character: CharacterTemplate,
-                name: str,
-                party: Party,
-                current_hp: int=None):
+    def __init__(self,
+                 character: CharacterTemplate,
+                 name: str,
+                 party: Party,
+                 current_hp: int = None):
+        CharacterIdentifier.__init__(self, name)
         CharacterTemplate.__init__(self,
                                    character.get_template_name(),
                                    character.get_max_hp(),
@@ -89,7 +88,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
         self.was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
         self.is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
         self.defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
-        self.public_attack_list: Set[Attack] = set()
+        self.public_attack_list: MutableSet[Attack] = set()
         self.public_offensive_multipliers = set()
         self.public_defensive_multipliers = set()
         # TODO: add functionality for death
@@ -111,7 +110,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
         self.public_offensive_multipliers.add(multiplier)
 
     def get_public_attack_list(self) -> Set[Attack]:
-        return copy(self.public_attack_list())
+        return set(self.public_attack_list)
 
     def get_current_hp(self) -> int:
         return self.current_hp
@@ -178,6 +177,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
             self.sp_spent = max(self.sp_spent, sp_cost)
             self.party.spend_mp(mp_cost)
             return True
+
 
 class Multiplier(Fraction):
     def __init__(self,

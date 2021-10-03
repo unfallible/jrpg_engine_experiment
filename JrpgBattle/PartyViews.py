@@ -37,8 +37,8 @@ class PublicPartyView(PartyView):
 
 
 class PrivatePartyView(PartyView):
-    def __init__(self, party):
-        super(PublicPartyView, self).__init__(party)
+    def __init__(self, party: Party):
+        super(PrivatePartyView, self).__init__(party)
 
     @property
     def __iter__(self) -> Iterator[PrivateCharacterView]:

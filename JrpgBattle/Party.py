@@ -1,29 +1,29 @@
-from typing import List, Set, Dict, Callable
+from typing import Set, Dict, MutableSet
 
 from JrpgBattle.Attack import AttackQueue
-from JrpgBattle.Character import CharacterStatus, CharacterIdentifier
+from JrpgBattle.Character import CharacterStatus
+from JrpgBattle.IdentifierSet import Identifier, IdentifierSet
 
 
-class PartyIdentifier:
+class PartyIdentifier(Identifier):
+    DOMAIN: str = "party"
+
     def __init__(self, name: str):
+        super(PartyIdentifier, self).__init__(name)
         self.name = name
 
-    def __eq__(self, other):
-        return isinstance(other, PartyIdentifier) and self.name == other.name
-
-    def __hash__(self):
-        return hash(self.name)
+    def get_domain(self) -> object:
+        return PartyIdentifier.DOMAIN
 
 
 class Party(PartyIdentifier):
     def __init__(self,
                  name: str,
-                 characters: Set[CharacterStatus] = set(),  # the characters in the user_party
+                 characters: MutableSet[CharacterStatus] = set(),  # the characters in the user_party
                  attack_queue: AttackQueue = AttackQueue(),  # the queue of attacks which the user_party will execute in the next turn
                  current_mp: int = 0):  # the current mana points. MP is a shared resource
         PartyIdentifier.__init__(self, name)
-        self.characters: Dict[CharacterIdentifier, CharacterStatus] = \
-            {character: character for character in characters}
+        self.characters: IdentifierSet[CharacterStatus] = IdentifierSet(characters)
         self.attack_queue = attack_queue
         self._current_mp = current_mp
 
@@ -38,7 +38,7 @@ class Party(PartyIdentifier):
         return item in self.characters
 
     def is_wiped_out(self) -> bool:
-        for member in self.characters:
+        for member in self.characters.values():
             if not member.is_dead():
                 return False
         return True

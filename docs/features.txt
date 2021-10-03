@@ -5,6 +5,12 @@ Next steps:
     Document final client/server interfaces
     reorganize DetailedAttackPlan.execute
     TESTS!
+    - Load Attacks
+    - Load CharacterTemplates
+    - Create character from attacks
+    - Instantiate CharacterStatuses from CharacterTemplates
+    - Create Party from Characters
+    - Initialize BattleClient from Parties and PlayerServers
 
 Done:
     Finish drafting out MainBattleClient's process_action_response() method

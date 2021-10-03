@@ -3,15 +3,53 @@ import json
 from fractions import Fraction
 from JrpgBattle.Character import CharacterTemplate, Multiplier
 from JrpgBattle.Attack import Attack, VanillaAttack
-from typing import Dict
+from typing import Dict, Callable
+
+
+class JrpgDataManager:
+    """
+    The JrpgDataManager is used to load up attack and character data from JSON files.
+    It also maintains functionality for looking up CharacterTemplates and Attacks by their names.
+    """
+
+    def __init__(self):
+        self.character_cache: Dict[str, CharacterTemplate] = {}
+        self.attack_cache: Dict[str, Attack] = {}
+
+    def get_jrpg_decoder_func(self) -> Callable:
+        def decoder_func(data: Dict):
+            if '__class__' not in data:
+                return data
+            elif data['__class__'] == VanillaAttack.__name__:
+                attack = VanillaAttack(name=data['template_name'],
+                                       attack_type=data['type'],
+                                       target_range=data['target_range'],
+                                       stamina_point_cost=data['sp_cost'],
+                                       mana_point_cost=data['mp_cost'],
+                                       damage=data['damage'])
+                assert attack.name not in self.attack_cache
+                self.attack_cache[attack.name] = attack
+                return attack
+            elif data['__class__'] == CharacterTemplate.__name__:
+                character = CharacterTemplate(name=data['template_name'],
+                                              max_hp=data['max_hp'],
+                                              offensive_type_affinities=data['offensive_type_affinities'],
+                                              defensive_type_affinities=data['defensive_type_affinities'],
+                                              attack_list=[self.attack_cache[atk_name] for atk_name in data['attack_list']],
+                                              parry_effectiveness=data['parry_effectiveness'])
+                assert character.template_name not in self.character_cache
+                self.character_cache[character.template_name] = character
+                return character
+
+        return decoder_func
 
 
 def encode_jrpg_data(obj):
-    print('in function')
-    print(obj)
+    # print('in function')
+    # print(obj)
     if isinstance(obj, Fraction):
-        print('got there')
-        return (obj.numerator, obj.denominator)
+        # print('got there')
+        return obj.numerator, obj.denominator
     elif isinstance(obj, CharacterTemplate):
         return {'__class__': CharacterTemplate.__name__,
                 'template_name': obj.template_name,
@@ -32,16 +70,21 @@ def encode_jrpg_data(obj):
                 }
     raise TypeError(repr(obj) + " is not JSON serializable")
 
-def decode_jrpg_data(dict: Dict):
-    if dict['__class__'] == VanillaAttack.__name__:
-        return VanillaAttack(name=dict['template_name'],
-                             attack_type=dict['type'],
-                             target_range=dict['target_range'],
-                             stamina_point_cost=dict['sp_cost'],
-                             mana_point_cost=dict['mp_cost'],
-                             damage=dict['damage'])
-    elif dict['__class__'] == CharacterTemplate.__name__:
-        return CharacterTemplate(name=dict['template_name'],
-                                 max_hp=dict['max_hp'],
-                                 offensive_type_affinities=dict['offensive_type_affinities'],
-                                 defensive_type_affinities=dict['defensive_type_affinities'], )
+
+def decode_jrpg_data(dictionary: Dict):
+    if '__class__' not in dictionary:
+        return dictionary
+    elif dictionary['__class__'] == VanillaAttack.__name__:
+        return VanillaAttack(name=dictionary['template_name'],
+                             attack_type=dictionary['type'],
+                             target_range=dictionary['target_range'],
+                             stamina_point_cost=dictionary['sp_cost'],
+                             mana_point_cost=dictionary['mp_cost'],
+                             damage=dictionary['damage'])
+    elif dictionary['__class__'] == CharacterTemplate.__name__:
+        return CharacterTemplate(name=dictionary['template_name'],
+                                 max_hp=dictionary['max_hp'],
+                                 offensive_type_affinities=dictionary['offensive_type_affinities'],
+                                 defensive_type_affinities=dictionary['defensive_type_affinities'],
+                                 attack_list=dictionary['attack_list'],
+                                 parry_effectiveness=dictionary['parry_effectiveness'])
