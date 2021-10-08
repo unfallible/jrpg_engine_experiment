@@ -31,16 +31,16 @@ class JrpgDataManager:
                 self.attack_cache[attack.name] = attack
                 return attack
             elif data['__class__'] == CharacterTemplate.__name__:
+                print(str(data['attack_list']))
                 character = CharacterTemplate(name=data['template_name'],
                                               max_hp=data['max_hp'],
                                               offensive_type_affinities=data['offensive_type_affinities'],
                                               defensive_type_affinities=data['defensive_type_affinities'],
-                                              attack_list=[self.attack_cache[atk_name] for atk_name in data['attack_list']],
+                                              attack_list={self.attack_cache[atk_name] for atk_name in data['attack_list']},
                                               parry_effectiveness=data['parry_effectiveness'])
                 assert character.template_name not in self.character_cache
                 self.character_cache[character.template_name] = character
                 return character
-
         return decoder_func
 
 

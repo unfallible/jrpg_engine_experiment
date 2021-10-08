@@ -30,15 +30,16 @@ class Party(PartyIdentifier):
     def get_name(self) -> str:
         return self.name
 
-    @property
     def __iter__(self):
-        return self.characters.__iter__()
+        # return self.characters.__iter__()
+        for c in self.characters:
+            yield c
 
     def __contains__(self, item):
         return item in self.characters
 
     def is_wiped_out(self) -> bool:
-        for member in self.characters.values():
+        for member in self.characters:
             if not member.is_dead():
                 return False
         return True

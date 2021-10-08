@@ -239,17 +239,16 @@ class DetailedAttackPlan:
 class AttackQueue:
     def __init__(self,
                  entries: List[DetailedAttackPlan] = []):
-        self._entries = entries
+        self.entries = entries
 
-    @property
     def __iter__(self):
-        return self._entries.__iter__()
+        return self.entries.__iter__()
 
     # Add a plan to the attack queue
     def enqueue(self, plan: DetailedAttackPlan):
-        self._entries[len(self._entries)] = plan
+        self.entries[len(self.entries)] = plan
 
     # Filter plans out of the attack queue and return a new, filtered version
     def filter_queue(self,
                      attack_filter: Callable[[DetailedAttackPlan], bool]) -> AttackQueue:
-        return AttackQueue([plan for plan in self._entries if attack_filter(plan)])
+        return AttackQueue([plan for plan in self.entries if attack_filter(plan)])

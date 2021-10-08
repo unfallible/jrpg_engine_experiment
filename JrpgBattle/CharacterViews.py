@@ -1,9 +1,9 @@
 from typing import Set, TYPE_CHECKING
 from fractions import Fraction
 from copy import copy
+from JrpgBattle.Attack import Attack
 from JrpgBattle.Character import CharacterStatus, Multiplier, CharacterIdentifier
 if TYPE_CHECKING:
-    from JrpgBattle.Attack import Attack
     from JrpgBattle.Party import Party
 
 
@@ -18,14 +18,15 @@ class PublicCharacterView(CharacterIdentifier):
     restrictive view. However, it can be extended to create more permissive
     views as well.
     """
-    def __int__(self, character: CharacterStatus):
+    def __init__(self, character: CharacterStatus):
+        super(PublicCharacterView, self).__init__(character.character_name)
         self._character = character
 
     def get_character_name(self) -> str:
         return self._character.character_name
 
-    def get_party(self) -> Party:
-        return self._character.party
+    # def get_party(self) -> Party:
+    #     return self._character.party
 
     def get_vulnerability(self) -> int:
         return self._character.get_vulnerability()
@@ -63,7 +64,8 @@ class PublicCharacterView(CharacterIdentifier):
 
 class PrivateCharacterView(PublicCharacterView):
     def __init__(self, character: CharacterStatus):
-        super().__init__(character)
+        PublicCharacterView.__init__(self, character)
+        # self._character = character
 
     def get_template_name(self) -> str:
         return self._character.template_name

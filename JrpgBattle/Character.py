@@ -67,7 +67,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
     def __init__(self,
                  character: CharacterTemplate,
                  name: str,
-                 party: Party,
+                 # party: Party,
                  current_hp: int = None):
         CharacterIdentifier.__init__(self, name)
         CharacterTemplate.__init__(self,
@@ -78,7 +78,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
                                    character.get_attack_list(),
                                    character.get_parry_effectiveness())
         self.character_name = name
-        self.party = party
+        # self.party = party
         self.current_hp = current_hp if current_hp is not None else character.get_max_hp()
         self.current_sp: int = 0
         self.sp_spent: int = 0
@@ -170,12 +170,12 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
             return False
         elif self.current_sp <= 0:
             return False
-        elif self.party.get_mp() < mp_cost:
-            return False
+        # elif self.party.get_mp() < mp_cost:
+        #     return False
         else:
             self.current_ap -= ap_cost
             self.sp_spent = max(self.sp_spent, sp_cost)
-            self.party.spend_mp(mp_cost)
+            # self.party.spend_mp(mp_cost)
             return True
 
 

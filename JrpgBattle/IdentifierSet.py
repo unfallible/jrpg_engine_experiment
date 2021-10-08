@@ -37,7 +37,10 @@ class IdentifierSet(Generic[E], MutableSet):
         return len(self.items)
 
     def __iter__(self) -> Iterator[E]:
-        return iter(self.items)
+        # return iter(self.items)
+        # return self.items.__iter__()
+        for i in self.items:
+            yield i
 
     def __contains__(self, x: object) -> bool:
         return isinstance(x, Identifier) and x in self.items

@@ -1,0 +1,26 @@
+{
+   "chocolate": {
+      "__class__": "VanillaAttack",
+    "template_name": "chocolate",
+    "type": 0,
+    "target_range": [
+      1,
+      1
+    ],
+    "sp_cost": 100,
+    "mp_cost": 0,
+    "damage": 3
+  },
+  "strawberry": {
+    "__class__": "VanillaAttack",
+    "template_name": "strawberry",
+    "type": 0,
+    "target_range": [
+    1,
+    1
+    ],
+    "sp_cost": 150,
+    "mp_cost": 0,
+    "damage": 5
+    }
+}

@@ -84,7 +84,8 @@ class MainBattleClient(BattleClient):
         self.roster.append(new_player)
         self.party_ids[party] = party
         # TODO: Find better way to add the character ids
-        for character in party:
+        # for character in party.characters:
+        for character in party.characters:
             self.characters_ids[character] = character
         return BattleClient.SUCCESS
 
@@ -97,7 +98,8 @@ class MainBattleClient(BattleClient):
     def start_battle(self):
         battle_round = 1
         turn = 1
-        while True:
+        winner = None
+        while winner is None:
             # loop every player once per round
             for player in self.roster:
                 team = player.party
@@ -113,7 +115,7 @@ class MainBattleClient(BattleClient):
                 # once existing plans have been executed, the player plans their next turn
                 self.open_transactions[self.transaction_count] = player.party  # open transaction for the player
                 # TODO FEAT: support more than two registered players
-                enemy = next([opponent.party for opponent in self.roster if not team == opponent.party])
+                enemy = next(opponent.party for opponent in self.roster if not team == opponent.party)
                 while player.server.process_command_request(self,
                                                             self.transaction_count,
                                                             PrivatePartyView(team),
@@ -124,9 +126,13 @@ class MainBattleClient(BattleClient):
                 self.transaction_count += 1
 
                 turn += 1
-                for party in self.roster:
-                    if party.party.is_wiped_out():
-                        pass  # TODO: Implement logic for finishing game
+                for player in self.roster:
+                    if player.party.is_wiped_out():
+                        # TODO: Implement logic for finishing game
+                        self.roster.remove(player)
+                        if len(self.roster) == 1:
+                            winner = self.roster[0]
+                            print(f'{winner.party.name} wins!')
             battle_round += 1
 
     def process_command_response(self,
@@ -173,7 +179,7 @@ class MainBattleClient(BattleClient):
         # TODO: This loop is pretty harmless but it looks really gross
         # TODO: Consider adding logic to the Attack and Character classes to perform some validation
         for target in plan.targets:
-            for party in self.roster:
-                if target not in party:
+            for player in self.roster:
+                if target not in player.party:
                     return False
         return True

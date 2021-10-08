@@ -14,7 +14,7 @@ the Private view to extend the Public view. It's at least worth investigating
 """
 
 
-class PartyView(ABC, PartyIdentifier):
+class PartyView(PartyIdentifier):
     def __init__(self, party: Party):
         PartyIdentifier.__init__(self, party.name)
         self._party = party
@@ -29,8 +29,7 @@ class PartyView(ABC, PartyIdentifier):
 class PublicPartyView(PartyView):
     def __init__(self, party):
         super(PublicPartyView, self).__init__(party)
-        
-    @property
+
     def __iter__(self) -> Iterator[PublicCharacterView]:
         for character in self._party:
             yield PublicCharacterView(character)
@@ -40,7 +39,6 @@ class PrivatePartyView(PartyView):
     def __init__(self, party: Party):
         super(PrivatePartyView, self).__init__(party)
 
-    @property
     def __iter__(self) -> Iterator[PrivateCharacterView]:
         for character in self._party:
             yield PrivateCharacterView(character)
