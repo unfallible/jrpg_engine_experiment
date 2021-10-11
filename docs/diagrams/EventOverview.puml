@@ -1,0 +1,138 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+interface EventObserver {
+    bool on_notify(BattleEvent event)
+    on_registration()
+    on_deregistration()
+    bool is_expired()
+    'expire()
+}
+EventObserver <|.. BattleClient
+EventObserver <|.. PlayerServer
+
+interface EventSubject {
+    notify_observers(BattleEvent event)
+    register_observer(EventObserver observer)
+    delete_observer(EventObserver observer)
+}
+EventSubject <|.. CharacterStatus
+EventSubject <|.. BattleClient
+
+abstract class BattleEvent {
+
+}
+
+note "Effects should be able to see their cause,\nbut not their cause's other effects" as n1
+note "Causes should be able to see their effects,\nbut not their cause's other effects" as n2
+note "Observers listening for effects should be able to the effect's cause" as n3
+
+class CauseEvent {
+    register_effect(EffectEvent)
+    finalize_effects()
+    bool is_finalized()
+    Set[EffectEvent] get_finalized_effects()
+}
+BattleEvent <|-- CauseEvent
+
+class EffectEvent {
+    CauseEvent get_cause()
+}
+BattleEvent <|-- EffectEvent
+
+class CharacterUpdatedEvent {
+    CharacterStatus character
+    CharacterUpdatedEventType type
+    BattleEvent cause
+    changes
+}
+EffectEvent <|-- CharacterUpdatedEvent
+
+/'
+class CharacterDamagedEvent
+CharacterUpdatedEvent <|-- CharacterDamagedEvent
+
+class CharacterStaggeredEvent
+CharacterUpdatedEvent <|-- CharacterStaggeredEvent
+
+class CharacterGainedSpEvent
+CharacterUpdatedEvent <|-- CharacterGainedSpEvent
+
+class CharacterPaidCostEvent
+CharacterUpdatedEvent <|-- CharacterPaidCostEvent
+
+class CharacterDefenseCompromisedEvent
+CharacterUpdatedEvent <|-- CharacterDefenseCompromisedEvent
+
+class CharacterVulnerabilityResetEvent
+CharacterUpdatedEvent <|-- CharacterVulnerabilityResetEvent
+'/
+
+class AttackEvent {
+    AttackContext context
+}
+CauseEvent <|-- AttackEvent
+
+class AttackContext {
+    Attack attack
+    CharacterStatus user
+    Set[CharacterStatus] targets
+    int sp_payment
+
+
+
+}
+
+class AttackUsedEvent
+AttackEvent <|-- AttackUsedEvent
+
+class AttackHitEvent
+AttackEvent <|-- AttackHitEvent
+
+class AttackParriedEvent
+AttackEvent <|-- AttackParriedEvent
+
+
+
+/'
+class PartyEvent
+BattleEvent <|-- PartyEvent
+
+class PartyStartTurnEvent
+PartyEvent <|-- PartyStartTurnEvent
+
+class PartyTurnIntervalEvent
+PartyEvent <|-- PartyTurnIntervalEvent
+
+class PartyEndTurnEvent
+PartyEvent <|-- PartyEndTurnEvent
+
+class PartyWipedOutEvent
+PartyEvent <|-- PartyWipedOutEvent
+
+class CharacterStatus
+EventSubject <|.. CharacterStatus
+'/
+
+enum AttackEventType {
+    STRONG_HIT
+    WEAK_HIT
+    ATTACK_PARRIED
+
+}
+
+enum CharacterUpdatedEventType {
+    DAMAGE_INFLICTED
+    SP_GAINED
+    SP_SPENT
+    DEFENSE_COMPROMISED
+    VULNERABILITY_RESET
+}
+
+class CharacterStatusUpdate {
+    List[]
+    __add__(CharacterStatusUpdate update)
+
+}
+
+@enduml

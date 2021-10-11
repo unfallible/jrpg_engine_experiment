@@ -27,33 +27,6 @@ if __name__ == '__main__':
     party_1 = Party("player 1", {terra})
     party_2 = Party("player 2", {cloud})
     idset = IdentifierSet[CharacterStatus]({terra, cloud})
-    weird_party = Party("test", {terra, cloud})
-    # for c in weird_party.characters:
-    print(str(isinstance(weird_party.characters, IdentifierSet)))
-
-
-    class Test:
-        def __init__(self, testset={1,2,3,4,5}):
-            self.testset = testset
-
-        def __iter__(self):
-            for i in self.testset:
-                yield i
-
-
-    class Test2:
-        def __init__(self, testset=Test()):
-            self.testset = testset
-
-        def __iter__(self):
-            for i in self.testset:
-                yield i
-
-
-    for i in Test2():
-        print(i)
-    for c in weird_party:
-        print("hello "+c.get_character_name())
     player_server = InteractivePlayerServer()
     battle_client = MainBattleClient()
     battle_client.register_party(party_1, player_server)

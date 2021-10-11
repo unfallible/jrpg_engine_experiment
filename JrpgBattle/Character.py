@@ -3,6 +3,8 @@ from typing import Callable, Set, TYPE_CHECKING, MutableSet
 from copy import copy
 from fractions import Fraction
 
+from JrpgBattle.BattleEventHandling.CharacterUpdateEvent import UpdateType, CharacterUpdateEvent
+from JrpgBattle.BattleEventHandling.EventManagement import BattleEvent, EventSubject
 from JrpgBattle.IdentifierSet import Identifier
 
 if TYPE_CHECKING:
@@ -37,7 +39,7 @@ class CharacterTemplate:
     def get_template_name(self):
         return self.template_name
 
-    def get_max_hp(self):
+    def get_max_hp(self) -> int:
         return self.max_hp
 
     def get_offensive_type_affinities(self) -> Set[Multiplier]:
@@ -63,13 +65,14 @@ class CharacterIdentifier(Identifier):
         return CharacterIdentifier.DOMAIN
 
 
-class CharacterStatus(CharacterTemplate, CharacterIdentifier):
+class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[BattleEvent]):
     def __init__(self,
                  character: CharacterTemplate,
                  name: str,
                  # party: Party,
                  current_hp: int = None):
         CharacterIdentifier.__init__(self, name)
+        EventSubject.__init__(self)
         CharacterTemplate.__init__(self,
                                    character.get_template_name(),
                                    character.get_max_hp(),
@@ -118,6 +121,10 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
     def get_vulnerability(self) -> int:
         return self.vulnerability
 
+    def set_defense(self, target: CharacterStatus):
+        target.defended_by = self
+        self.is_defending = target
+
     def get_defender(self) -> CharacterStatus:
         return self.defended_by
 
@@ -126,6 +133,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
 
     def receive_enemy_damage(self, damage: int):
         self.current_hp -= damage
+        event = CharacterUpdateEvent(self, UpdateType.DAMAGE_INCURRED, hp_change=damage)
+        self.notify_observers(event)
         if self.current_hp <= 0:
             self.current_hp = 0
             self.dead = True
@@ -156,6 +165,9 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
         # staggered characters don't get stamina points
         if not self.stagger:
             self.current_sp += self.current_ap
+            if self.current_ap > 0:
+                event = CharacterUpdateEvent(self, UpdateType.SP_GAINED, sp_change=self.current_ap)
+                self.notify_observers(event)
 
         self.is_defending = None
         self.defended_by = None
@@ -175,6 +187,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier):
         else:
             self.current_ap -= ap_cost
             self.sp_spent = max(self.sp_spent, sp_cost)
+            event = CharacterUpdateEvent(self, UpdateType.SP_SPENT, sp_change=-1*self.sp_spent)
+            self.notify_observers(event)
             # self.party.spend_mp(mp_cost)
             return True
 

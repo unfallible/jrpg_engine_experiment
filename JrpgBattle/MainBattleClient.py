@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Dict, List
 from abc import ABC, abstractmethod
 
+from JrpgBattle.BattleEventHandling.EventManagement import EventObserver, E
 from JrpgBattle.Party import Party, PartyIdentifier
 from JrpgBattle.Character import CharacterStatus, CharacterIdentifier
 from JrpgBattle.PartyViews import PrivatePartyView, PublicPartyView
@@ -66,10 +67,11 @@ class PlayerProfile:
         return hash(self.party)
 
 
-class MainBattleClient(BattleClient):
+class MainBattleClient(BattleClient, EventObserver):
     # def __init__(self,
     #              roster: Set[Tuple[Party, PlayerServer]] = set()):
     def __init__(self):
+        EventObserver.__init__(self)
         self.roster: List[PlayerProfile] = []
         self.characters_ids: Dict[CharacterIdentifier, CharacterStatus] = {}
         self.party_ids: Dict[PartyIdentifier, Party] = {}
@@ -87,6 +89,7 @@ class MainBattleClient(BattleClient):
         # for character in party.characters:
         for character in party.characters:
             self.characters_ids[character] = character
+            character.register_observer(self)
         return BattleClient.SUCCESS
 
     """
@@ -95,6 +98,10 @@ class MainBattleClient(BattleClient):
     The expectation is that main game loop will communicate with the BattleClient via the PlayerServer
     interface. 
     """
+
+    def handle_event(self, event: E) -> bool:
+        print(f'Event occurred: {str(event)}')
+
     def start_battle(self):
         battle_round = 1
         turn = 1
@@ -151,6 +158,10 @@ class MainBattleClient(BattleClient):
             else:
                 # if the plan is invalid, return an error
                 return BattleClient.ERROR
+        # set defenses
+        for char_id in defenses:
+            target = self.characters_ids[defenses[char_id]]
+            self.characters_ids[char_id].set_defense(target)
         # now look up the party associated with the action request
         party = self.open_transactions[transaction_id]
         # set the party's plans for next turn, then close the transaction
@@ -172,7 +183,7 @@ class MainBattleClient(BattleClient):
         # It is ESSENTIAL that attack validation only uses information available to the player who set the plan
         if plan.user not in user_party:
             return False
-        # user_status = user_party.get_status(plan.user)
+        # user_status = user_party.get_status(plan.attacker)
         user_status = self.characters_ids[plan.user]
         if plan.attack not in user_status.get_attack_list():
             return False
@@ -180,6 +191,8 @@ class MainBattleClient(BattleClient):
         # TODO: Consider adding logic to the Attack and Character classes to perform some validation
         for target in plan.targets:
             for player in self.roster:
-                if target not in player.party:
-                    return False
-        return True
+                if user_party is not player.party and target in player.party:
+                    return True
+        return False
+
+

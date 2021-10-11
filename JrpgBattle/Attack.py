@@ -1,8 +1,14 @@
 from __future__ import annotations
+
+from copy import copy
+from math import ceil
 from typing import List, Callable, Set, Tuple, TYPE_CHECKING
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from fractions import Fraction
+
+from JrpgBattle.BattleEventHandling.AttackEvent import ParryEvent
+from JrpgBattle.BattleEventHandling.EventManagement import notify_all_observers
 
 if TYPE_CHECKING:
     from JrpgBattle.Character import CharacterStatus, CharacterIdentifier
@@ -58,7 +64,7 @@ class AttackType(IntEnum):
 class Attack(ABC):
     def __init__(self,
                  name: str,
-                 attack_type: AttackType=AttackType.UTILITY,  # the elemental type of the attack
+                 attack_type: AttackType=AttackType.UTILITY,  # the elemental event_type of the attack
                  target_range: Tuple[int, int]=(1, 1),  # the minimum and maximum (inclusive) number of characters the attack can target
                  action_point_cost: int=100,  #
                  stamina_point_cost: int=100,  #
@@ -69,6 +75,9 @@ class Attack(ABC):
         self.action_point_cost = action_point_cost
         self.stamina_point_cost = stamina_point_cost
         self.mana_point_cost = mana_point_cost
+
+    def __repr__(self):
+        return self.name
 
     def get_name(self) -> str:
         return self.name
@@ -111,11 +120,14 @@ class AttackPlan:
         self.attack = attack
         self.targets = targets
 
+    def __repr__(self):
+        return f'{repr(self.user)}, {repr(self.attack)}, {repr(self.targets)}'
+
 
 class VanillaAttack(Attack):
     def __init__(self,
                  name: str,
-                 attack_type: AttackType = AttackType.UTILITY,  # the elemental type of the attack
+                 attack_type: AttackType = AttackType.UTILITY,  # the elemental event_type of the attack
                  # the minimum and maximum (inclusive) number of characters the attack can target
                  target_range: Tuple[int, int] = (1, 1),
                  action_point_cost: int = 100,  #
@@ -159,7 +171,11 @@ class DetailedAttackPlan:
         self.targets = targets
         self.status = status
 
+    def __repr__(self):
+        return f'{repr(self.user)}, {repr(self.attack)}, {repr(self.targets)}'
+
     def execute(self):
+        # TODO EVENT
         self.user.publicize_attack(self.attack)
 
         # if the attack was not cancelled then its status should be PENDING
@@ -176,12 +192,13 @@ class DetailedAttackPlan:
                                                       self.attack.stamina_point_cost,
                                                       self.attack.mana_point_cost)
         if not payment_successful:
+            # TODO EVENT
             self.status = DetailedAttackPlan.SKIPPED
             return
+        # TODO EVENT: payment successful, using attack
 
-        # TODO: Should there be any kind of lock here?
+        # TODO THREADS: Should there be any kind of lock here?
         self.status = DetailedAttackPlan.IN_PROGRESS  # the DetailedAttackPlan is now executing
-        result = DetailedAttackPlan.IN_PROGRESS  # Assume the attack missed unless it hits
         swings = 0  # the number of targets the attack has been used against
         hits = 0  # the number of targets the attack has hit
         for target in self.targets:
@@ -196,11 +213,22 @@ class DetailedAttackPlan:
             # now check if the target is being defended
             parry_multiplier = Fraction(1, 1)
             if target.get_defender() is None:
+                # TODO EVENT: Attack hit
                 hits += 1
             else:
+                # TODO EVENT: Attack parried
                 parry_effectiveness = target.get_defender().get_parry_effectiveness()
                 assist_penalty = Fraction(0) if target.get_defender() is target else Fraction(1, 2)
-                parry_multiplier = 1 - (parry_effectiveness ** (assist_penalty + target.get_vulnerability()))
+                parry_multiplier = 1 - (parry_effectiveness ** float(assist_penalty + target.get_vulnerability()))
+                parry_event = ParryEvent(self.user,
+                                         self.attack,
+                                         target,
+                                         target.get_defender())
+                notify_all_observers(parry_event,
+                                     self.user,
+                                     target,
+                                     target.get_defender())
+
 
             # if parry was perfect, just skip the rest of the attack calculations
             if parry_multiplier <= 0:
@@ -222,7 +250,7 @@ class DetailedAttackPlan:
             # calculate base damage
             base_damage = self.attack.compute_base_damage(self, target)
 
-            total_damage = base_damage*total_multiplier*parry_multiplier
+            total_damage = ceil(base_damage*total_multiplier*parry_multiplier)
             target.receive_enemy_damage(total_damage)
 
         #after processing all targets, update the attack's status with the result
@@ -239,14 +267,15 @@ class DetailedAttackPlan:
 class AttackQueue:
     def __init__(self,
                  entries: List[DetailedAttackPlan] = []):
-        self.entries = entries
+        self.entries = copy(entries)
 
     def __iter__(self):
         return self.entries.__iter__()
 
     # Add a plan to the attack queue
     def enqueue(self, plan: DetailedAttackPlan):
-        self.entries[len(self.entries)] = plan
+        # self.entries[len(self.entries)] = plan
+        self.entries.append(plan)
 
     # Filter plans out of the attack queue and return a new, filtered version
     def filter_queue(self,

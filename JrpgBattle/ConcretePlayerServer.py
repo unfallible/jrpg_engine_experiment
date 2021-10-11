@@ -56,20 +56,6 @@ class InteractivePlayerServer(PlayerServer):
             client_rval = client.process_command_response(attacks=attacks, defenses=defenses, transaction_id=transaction_id)
         return PlayerServer.SUCCESS
 
-    # def process_view_response(self,
-    #                           team: PrivatePartyView,
-    #                           enemy: PublicPartyView,
-    #                           transaction_id: int) -> int:
-    #     assert transaction_id in self.open_requests
-    #     self.team = team
-    #     self.team_index = [(char, [atk for atk in char.get_attack_list()]) for char in team]
-    #     # for char in team:
-    #     #     self.team_index.append((char, [atk for atk in char.get_attack_list()]))
-    #     self.enemy = enemy
-    #     self.enemy_index = [char for char in enemy]
-    #     self.open_requests.discard(transaction_id)
-    #     return PlayerServer.SUCCESS
-
     def _print_player_view(self, team: List[PrivateCharacterView],
                            attacks: List[List[Attack]], enemy: List[PublicCharacterView]):
         assert len(team) == len(attacks)
@@ -89,7 +75,7 @@ class InteractivePlayerServer(PlayerServer):
         ci = 1
         print('ENEMIES:')
         for c in enemy:
-            print(f'{f"{ci}.":<{3}}  {c.get_character_name()[:8]:<{8}} '
+            print(f'{f"{ci:}.":<{3}}  {c.get_character_name()[:8]:<{8}} '
                   f'DMG:{c.get_damage():> {4}}/??? '
                   f'SP:{c.get_sp():>+{3}}')
             ci += 1

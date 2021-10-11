@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from collections.abc import Set
+from copy import copy
 from typing import TypeVar, Generic, Iterator, Dict, MutableSet
 
 
@@ -31,7 +32,7 @@ E = TypeVar("E", bound=Identifier)
 class IdentifierSet(Generic[E], MutableSet):
     # TODO: this is wrong, should probably just be Set[E]
     def __init__(self, items: MutableSet[E]):
-        self.items: MutableSet[E] = items
+        self.items: MutableSet[E] = copy(items)
 
     def __len__(self) -> int:
         return len(self.items)

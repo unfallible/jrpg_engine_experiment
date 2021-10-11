@@ -6,7 +6,6 @@
     "offensive_type_affinities": [],
     "defensive_type_affinities": [],
     "attack_list": [
-      "strawberry",
       "chocolate"
     ],
     "parry_effectiveness": "3/4"
@@ -18,8 +17,8 @@
     "offensive_type_affinities": [],
     "defensive_type_affinities": [],
     "attack_list": [
-      "strawberry",
-      "chocolate"
+      "chocolate",
+      "strawberry"
     ],
     "parry_effectiveness": "3/4"
   }

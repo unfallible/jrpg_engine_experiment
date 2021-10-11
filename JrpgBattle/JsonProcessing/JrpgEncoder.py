@@ -37,7 +37,7 @@ class JrpgDataManager:
                                               offensive_type_affinities=data['offensive_type_affinities'],
                                               defensive_type_affinities=data['defensive_type_affinities'],
                                               attack_list={self.attack_cache[atk_name] for atk_name in data['attack_list']},
-                                              parry_effectiveness=data['parry_effectiveness'])
+                                              parry_effectiveness=Fraction(data['parry_effectiveness']))
                 assert character.template_name not in self.character_cache
                 self.character_cache[character.template_name] = character
                 return character
@@ -62,7 +62,7 @@ def encode_jrpg_data(obj):
     elif isinstance(obj, VanillaAttack):
         return {'__class__': VanillaAttack.__name__,
                 'template_name': obj.get_name(),
-                'type': obj.get_attack_type(),
+                'event_type': obj.get_attack_type(),
                 'target_range': obj.get_target_range(),
                 'sp_cost': obj.get_sp_cost(),
                 'mp_cost': obj.get_mp_cost(),
@@ -76,7 +76,7 @@ def decode_jrpg_data(dictionary: Dict):
         return dictionary
     elif dictionary['__class__'] == VanillaAttack.__name__:
         return VanillaAttack(name=dictionary['template_name'],
-                             attack_type=dictionary['type'],
+                             attack_type=dictionary['event_type'],
                              target_range=dictionary['target_range'],
                              stamina_point_cost=dictionary['sp_cost'],
                              mana_point_cost=dictionary['mp_cost'],
