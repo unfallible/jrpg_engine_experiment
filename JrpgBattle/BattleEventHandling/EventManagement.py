@@ -41,13 +41,13 @@ class EventObserver(Generic[E], ABC):
     """
     on_notify gets called the by EventSubject class when an event occurs.
     If the observer has not expired, then the handle_event code gets executed.
-    Returns False if the subject should deregister the observer, either 
+    Returns True if the subject should deregister the observer, either 
     because the observer has expired or because the event_handler specified that
-    it should be deregistered.
+    it should be deregistered by returning True.
     """
     def on_notify(self, event: E) -> bool:
         if not self.expired:
-            return self.handle_event(event) and self.expired
+            return self.handle_event(event) or self.expired
         return self.expired
 
     def on_registration(self):
@@ -69,7 +69,7 @@ class EventSubject(Generic[E]):
         self.observers.add(observer)
         observer.on_registration()
 
-    def delete_observer(self, observer: EventObserver[E]):
+    def deregister_observer(self, observer: EventObserver[E]):
         self.observers.remove(observer)
         observer.on_deregistration()
 
@@ -77,28 +77,28 @@ class EventSubject(Generic[E]):
         current_observers = copy(self.observers)
         for observer in current_observers:
             if observer.is_expired():
-                self.delete_observer(observer)
+                self.deregister_observer(observer)
             else:
                 deregister = observer.on_notify(event)
                 if deregister:
-                    self.delete_observer(observer)
+                    self.deregister_observer(observer)
 
     def clear_observers(self):
         current_observers = copy(self.observers)
         for observer in current_observers:
-            self.delete_observer(observer)
+            self.deregister_observer(observer)
 
 
-def notify_all_observers(event: BattleEvent, *subjects: EventSubject):
+def notify_shared_observers(event: BattleEvent, *subjects: EventSubject):
     observer_list = set()
     for subject in subjects:
         observer_list |= subject.observers
     for observer in observer_list:
         if observer.is_expired():
             for s in subjects:
-                s.delete_observer(observer)
+                s.deregister_observer(observer)
         else:
             deregister = observer.on_notify(event)
             if deregister:
                 for s in subjects:
-                    s.delete_observer(observer)
+                    s.deregister_observer(observer)

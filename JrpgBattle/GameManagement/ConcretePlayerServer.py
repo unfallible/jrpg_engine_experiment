@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 from JrpgBattle.PartyViews import PrivatePartyView, PublicPartyView
 from JrpgBattle.CharacterViews import PrivateCharacterView, PublicCharacterView
-from JrpgBattle.MainBattleClient import PlayerServer, BattleClient
+from JrpgBattle.GameManagement.MainBattleClient import PlayerServer, BattleClient
 from JrpgBattle.Party import Party
 from JrpgBattle.Attack import Attack, AttackPlan
 

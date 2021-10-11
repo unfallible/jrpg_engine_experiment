@@ -150,10 +150,15 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
                 self.vulnerability = 0
             else:
                 self.vulnerability += 1
-                self.stagger = True
         elif not self.was_attacked:
             self.vulnerability = 0
 
+        if self.is_defending is not None and not self.is_defending.was_attacked:
+            self.stagger = True
+            stagger_event = CharacterUpdateEvent(self,
+                                                 UpdateType.DEFENSE_WHIFFED,
+                                                 character_staggers=True)
+            self.notify_observers(stagger_event)
         self.current_ap = 100
         self.sp_spent = 0
 

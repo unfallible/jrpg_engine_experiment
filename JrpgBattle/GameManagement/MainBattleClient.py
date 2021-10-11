@@ -7,6 +7,8 @@ the request, it processes it and sends a attacks containing the requested action
 """
 
 from __future__ import annotations
+
+import logging
 from typing import Dict, List
 from abc import ABC, abstractmethod
 
@@ -86,7 +88,7 @@ class MainBattleClient(BattleClient, EventObserver):
         self.roster.append(new_player)
         self.party_ids[party] = party
         # TODO: Find better way to add the character ids
-        # for character in party.characters:
+        party.register_observer(self)
         for character in party.characters:
             self.characters_ids[character] = character
             character.register_observer(self)
@@ -100,7 +102,9 @@ class MainBattleClient(BattleClient, EventObserver):
     """
 
     def handle_event(self, event: E) -> bool:
-        print(f'Event occurred: {str(event)}')
+        # print(f'Event occurred: {str(event)}')
+        print(str(event))
+        # logging.info(str(event))
 
     def start_battle(self):
         battle_round = 1
@@ -111,14 +115,17 @@ class MainBattleClient(BattleClient, EventObserver):
             for player in self.roster:
                 team = player.party
                 # start turn by executing existing plans
-                for member in team:
-                    member.start_turn()
+                # for member in team:
+                #     member.start_turn()
+                team.start_turn()
 
                 for plan in team.attack_queue:
                     plan.execute()
 
-                for member in player.party:
-                    member.turn_interval()
+                # for member in team:
+                #     member.turn_interval()
+                team.turn_interval()
+
                 # once existing plans have been executed, the player plans their next turn
                 self.open_transactions[self.transaction_count] = player.party  # open transaction for the player
                 # TODO FEAT: support more than two registered players
@@ -131,6 +138,8 @@ class MainBattleClient(BattleClient, EventObserver):
                 while self.open_transactions:
                     continue
                 self.transaction_count += 1
+
+                team.end_turn()
 
                 turn += 1
                 for player in self.roster:
