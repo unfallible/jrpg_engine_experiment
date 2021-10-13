@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from JrpgBattle.Attack import Attack, DetailedAttackPlan
 
 """
-The CharacterTemplate descibes the profile of a character without reference
+The CharacterTemplate describes the profile of a character without reference
 to the character's state in a particular battle. It is used to construct
 CharacterStatus objects for battles. This has certain advantages, such as
 allowing common enemies to be repeatedly built from the same template.
@@ -138,6 +138,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         if self.current_hp <= 0:
             self.current_hp = 0
             self.dead = True
+            event = CharacterUpdateEvent(self, UpdateType.CHARACTER_DIED, character_died=True)
+            self.notify_observers(event)
 
     def is_dead(self) -> bool:
         return self.dead
@@ -147,10 +149,22 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         # first, check for any failed parries.
         if self.defended_by is not None:
             if self.was_attacked:
+                battle_event = CharacterUpdateEvent(self,
+                                                    UpdateType.VULNERABILITY_RESET,
+                                                    vulnerability_change=-1*self.vulnerability)
+                self.notify_observers(battle_event)
                 self.vulnerability = 0
             else:
+                battle_event = CharacterUpdateEvent(self,
+                                                    UpdateType.VULNERABILITY_RAISED,
+                                                    vulnerability_change=1)
+                self.notify_observers(battle_event)
                 self.vulnerability += 1
         elif not self.was_attacked:
+            battle_event = CharacterUpdateEvent(self,
+                                                UpdateType.VULNERABILITY_RESET,
+                                                vulnerability_change=-1 * self.vulnerability)
+            self.notify_observers(battle_event)
             self.vulnerability = 0
 
         if self.is_defending is not None and not self.is_defending.was_attacked:

@@ -26,7 +26,7 @@ class PartyEvent(BattleEvent):
 
     def __str__(self):
         if self.event_type == PartyEventType.TURN_STARTED:
-            return f'\n\n==== Team {self.party.name}: TURN START ====\n' \
+            return f'==== Team {self.party.name}: TURN START ====\n' \
                    f'Team {self.party.name} enters attack phase'
         elif self.event_type == PartyEventType.START_INTERVAL:
             return f'Team {self.party.name} exits attack phase'

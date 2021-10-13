@@ -6,7 +6,7 @@
     "offensive_type_affinities": [],
     "defensive_type_affinities": [],
     "attack_list": [
-      "chocolate"
+      "default"
     ],
     "parry_effectiveness": "3/4"
   },

@@ -103,7 +103,7 @@ class MainBattleClient(BattleClient, EventObserver):
 
     def handle_event(self, event: E) -> bool:
         # print(f'Event occurred: {str(event)}')
-        print(str(event))
+        input(str(event))
         # logging.info(str(event))
 
     def start_battle(self):
@@ -121,6 +121,16 @@ class MainBattleClient(BattleClient, EventObserver):
 
                 for plan in team.attack_queue:
                     plan.execute()
+
+                for p in self.roster:
+                    if p.party.is_wiped_out():
+                        # TODO: Implement logic for finishing game
+                        self.roster.remove(p)
+                        if len(self.roster) == 1:
+                            winner = self.roster[0]
+                            print(f'{winner.party.name} wins!')
+                if winner is not None:
+                    break
 
                 # for member in team:
                 #     member.turn_interval()
@@ -142,13 +152,6 @@ class MainBattleClient(BattleClient, EventObserver):
                 team.end_turn()
 
                 turn += 1
-                for player in self.roster:
-                    if player.party.is_wiped_out():
-                        # TODO: Implement logic for finishing game
-                        self.roster.remove(player)
-                        if len(self.roster) == 1:
-                            winner = self.roster[0]
-                            print(f'{winner.party.name} wins!')
             battle_round += 1
 
     def process_command_response(self,

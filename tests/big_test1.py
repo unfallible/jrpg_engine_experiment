@@ -23,7 +23,7 @@ if __name__ == '__main__':
         characters = json.loads(data, object_hook=manager.get_jrpg_decoder_func())
         pp.pprint(characters)
     terra = CharacterStatus(manager.character_cache["somebody"], "terra")
-    cloud = CharacterStatus(manager.character_cache["somebody"], "cloud")
+    cloud = CharacterStatus(manager.character_cache["somebody"], "mad_dog")
     party_1 = Party("player 1", {terra})
     party_2 = Party("player 2", {cloud})
     idset = IdentifierSet[CharacterStatus]({terra, cloud})

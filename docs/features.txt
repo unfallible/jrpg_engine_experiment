@@ -1,9 +1,11 @@
 Next steps:
-    Replace transaction ids with PartyIdentifiers (assumes one transaction per party)
-    Finish drafting out ConcretePlayerServer
-    Implement BattleClient request processing
+    cleanup: remove AP and MP from game code
+    rework sp to be recovered by standby option
+    implement visibility mechanic
+    Rework vulnerability to use percentanges
     Document final client/server interfaces
     reorganize DetailedAttackPlan.execute
+    Add simple AI
     TESTS!
     - Load Attacks
     - Load CharacterTemplates
@@ -13,6 +15,9 @@ Next steps:
     - Initialize BattleClient from Parties and PlayerServers
 
 Done:
+    Implement BattleClient request processing
+    Replace transaction ids with PartyIdentifiers (assumes one transaction per party)
+    Finish drafting out ConcretePlayerServer
     Finish drafting out MainBattleClient's process_action_response() method
     Hammer out relationship between PlayerServer and Party
 

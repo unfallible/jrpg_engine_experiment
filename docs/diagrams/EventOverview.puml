@@ -48,26 +48,6 @@ class CharacterUpdatedEvent {
 }
 EffectEvent <|-- CharacterUpdatedEvent
 
-/'
-class CharacterDamagedEvent
-CharacterUpdatedEvent <|-- CharacterDamagedEvent
-
-class CharacterStaggeredEvent
-CharacterUpdatedEvent <|-- CharacterStaggeredEvent
-
-class CharacterGainedSpEvent
-CharacterUpdatedEvent <|-- CharacterGainedSpEvent
-
-class CharacterPaidCostEvent
-CharacterUpdatedEvent <|-- CharacterPaidCostEvent
-
-class CharacterDefenseCompromisedEvent
-CharacterUpdatedEvent <|-- CharacterDefenseCompromisedEvent
-
-class CharacterVulnerabilityResetEvent
-CharacterUpdatedEvent <|-- CharacterVulnerabilityResetEvent
-'/
-
 class AttackEvent {
     AttackContext context
 }
@@ -78,23 +58,18 @@ class AttackContext {
     CharacterStatus user
     Set[CharacterStatus] targets
     int sp_payment
-
-
-
 }
 
-class AttackUsedEvent
-AttackEvent <|-- AttackUsedEvent
+class BattleEffect {
+    BattleEffect combine(BattleEffect other)
+}
+AttackContext *-- BattleEffect
 
-class AttackHitEvent
-AttackEvent <|-- AttackHitEvent
-
-class AttackParriedEvent
-AttackEvent <|-- AttackParriedEvent
-
-
+class AttackContext
+AttackEvent --> AttackContext
 
 /'
+
 class PartyEvent
 BattleEvent <|-- PartyEvent
 
@@ -115,11 +90,13 @@ EventSubject <|.. CharacterStatus
 '/
 
 enum AttackEventType {
-    STRONG_HIT
-    WEAK_HIT
+    ATTACK_STARTED
+    ATTACK_HIT
     ATTACK_PARRIED
-
+    PAYMENT_FAILED
+    ATTACK_STAGGERED
 }
+AttackEventType -- AttackEvent
 
 enum CharacterUpdatedEventType {
     DAMAGE_INFLICTED
@@ -128,6 +105,7 @@ enum CharacterUpdatedEventType {
     DEFENSE_COMPROMISED
     VULNERABILITY_RESET
 }
+CharacterUpdatedEventType -- CharacterUpdatedEvent
 
 class CharacterStatusUpdate {
     List[]

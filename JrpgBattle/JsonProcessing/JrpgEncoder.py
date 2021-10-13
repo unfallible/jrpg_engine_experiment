@@ -31,7 +31,7 @@ class JrpgDataManager:
                 self.attack_cache[attack.name] = attack
                 return attack
             elif data['__class__'] == CharacterTemplate.__name__:
-                print(str(data['attack_list']))
+                # print(str(data['attack_list']))
                 character = CharacterTemplate(name=data['template_name'],
                                               max_hp=data['max_hp'],
                                               offensive_type_affinities=data['offensive_type_affinities'],
