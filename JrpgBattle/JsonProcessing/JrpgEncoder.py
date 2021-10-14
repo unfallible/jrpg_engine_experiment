@@ -1,7 +1,7 @@
 # from json import JSONEncoder
 import json
 from fractions import Fraction
-from JrpgBattle.Character import CharacterTemplate, Multiplier
+from JrpgBattle.Character import CharacterTemplate
 from JrpgBattle.Attack import Attack, VanillaAttack
 from typing import Dict, Callable
 
@@ -25,7 +25,6 @@ class JrpgDataManager:
                                        attack_type=data['type'],
                                        target_range=data['target_range'],
                                        stamina_point_cost=data['sp_cost'],
-                                       mana_point_cost=data['mp_cost'],
                                        damage=data['damage'])
                 assert attack.name not in self.attack_cache
                 self.attack_cache[attack.name] = attack
@@ -34,8 +33,6 @@ class JrpgDataManager:
                 # print(str(data['attack_list']))
                 character = CharacterTemplate(name=data['template_name'],
                                               max_hp=data['max_hp'],
-                                              offensive_type_affinities=data['offensive_type_affinities'],
-                                              defensive_type_affinities=data['defensive_type_affinities'],
                                               attack_list={self.attack_cache[atk_name] for atk_name in data['attack_list']},
                                               parry_effectiveness=Fraction(data['parry_effectiveness']))
                 assert character.template_name not in self.character_cache
@@ -54,8 +51,6 @@ def encode_jrpg_data(obj):
         return {'__class__': CharacterTemplate.__name__,
                 'template_name': obj.template_name,
                 'max_hp': obj.max_hp,
-                'offensive_type_affinities': list(obj.get_offensive_type_affinities()),
-                'defensive_type_affinities': list(obj.get_defensive_type_affinities()),
                 'attack_list': list(obj.get_attack_list()),
                 'parry_effectiveness': str(obj.get_parry_effectiveness())
                 }
@@ -65,7 +60,6 @@ def encode_jrpg_data(obj):
                 'event_type': obj.get_attack_type(),
                 'target_range': obj.get_target_range(),
                 'sp_cost': obj.get_sp_cost(),
-                'mp_cost': obj.get_mp_cost(),
                 'damage': obj.damage
                 }
     raise TypeError(repr(obj) + " is not JSON serializable")
@@ -79,12 +73,9 @@ def decode_jrpg_data(dictionary: Dict):
                              attack_type=dictionary['event_type'],
                              target_range=dictionary['target_range'],
                              stamina_point_cost=dictionary['sp_cost'],
-                             mana_point_cost=dictionary['mp_cost'],
                              damage=dictionary['damage'])
     elif dictionary['__class__'] == CharacterTemplate.__name__:
         return CharacterTemplate(name=dictionary['template_name'],
                                  max_hp=dictionary['max_hp'],
-                                 offensive_type_affinities=dictionary['offensive_type_affinities'],
-                                 defensive_type_affinities=dictionary['defensive_type_affinities'],
                                  attack_list=dictionary['attack_list'],
                                  parry_effectiveness=dictionary['parry_effectiveness'])

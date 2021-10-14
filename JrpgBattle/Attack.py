@@ -68,14 +68,12 @@ class Attack(ABC):
                  attack_type: AttackType=AttackType.UTILITY,  # the elemental event_type of the attack
                  target_range: Tuple[int, int]=(1, 1),  # the minimum and maximum (inclusive) number of characters the attack can target
                  action_point_cost: int=100,  #
-                 stamina_point_cost: int=100,  #
-                 mana_point_cost: int=0):  #
+                 stamina_point_cost: int=100):
         self.name = name
         self.attack_type = attack_type
         self.target_range = target_range
         self.action_point_cost = action_point_cost
         self.stamina_point_cost = stamina_point_cost
-        self.mana_point_cost = mana_point_cost
 
     def __repr__(self):
         return self.name
@@ -97,9 +95,6 @@ class Attack(ABC):
 
     def get_sp_cost(self) -> int:
         return self.stamina_point_cost
-
-    def get_mp_cost(self) -> int:
-        return self.mana_point_cost
 
     @abstractmethod
     def get_power(self) -> str:
@@ -133,14 +128,12 @@ class VanillaAttack(Attack):
                  target_range: Tuple[int, int] = (1, 1),
                  action_point_cost: int = 100,  #
                  stamina_point_cost: int = 100,  #
-                 mana_point_cost: int = 0,
                  damage: int = 0):
         super().__init__(name=name,
                          attack_type=attack_type,
                          target_range=target_range,
                          action_point_cost=action_point_cost,
-                         stamina_point_cost=stamina_point_cost,
-                         mana_point_cost=mana_point_cost)
+                         stamina_point_cost=stamina_point_cost)
         self.damage = damage
 
     def compute_base_damage(self,
@@ -193,8 +186,7 @@ class DetailedAttackPlan:
 
         # Now process the payment for the attack
         payment_successful = self.user.attack_payment(self.attack.action_point_cost,
-                                                      self.attack.stamina_point_cost,
-                                                      self.attack.mana_point_cost)
+                                                      self.attack.stamina_point_cost)
         if not payment_successful:
             attack_event = PaymentFailedEvent(self.user, self.attack)
             self.user.notify_observers(attack_event)
@@ -249,23 +241,10 @@ class DetailedAttackPlan:
             if parry_multiplier <= 0:
                 continue
 
-            #TODO: Consider optimizing multipliers
-            total_multiplier = Fraction(1, 1)
-            # aggregate offensive multipliers
-            for multiplier in self.user.get_offensive_type_affinities():
-                if multiplier.is_relevant(self):
-                    total_multiplier *= multiplier
-                    self.user.publicize_attack_multiplier(multiplier)
-            # aggregate defensive multipliers
-            for multiplier in target.get_defensive_type_affinities():
-                if multiplier.is_relevant(self):
-                    total_multiplier *= multiplier
-                    target.publicize_defense_multiplier(multiplier)
-
             # calculate base damage
             base_damage = self.attack.compute_base_damage(self, target)
 
-            total_damage = ceil(base_damage*total_multiplier*parry_multiplier)
+            total_damage = ceil(base_damage*parry_multiplier)
             target.receive_enemy_damage(total_damage)
 
         #after processing all targets, update the attack's status with the result

@@ -46,12 +46,6 @@ class PublicCharacterView(CharacterIdentifier):
     def get_public_attack_list(self) -> Set[Attack]:
         return copy(self._character.get_public_attack_list())
 
-    def get_public_offensive_multipliers(self) -> Set[Multiplier]:
-        return self._character.public_offensive_multipliers
-
-    def get_public_defensive_multipliers(self) -> Set[Multiplier]:
-        return self._character.public_defensive_multipliers
-
     def was_attacked(self) -> bool:
         return self._character.was_attacked
 
@@ -72,12 +66,6 @@ class PrivateCharacterView(PublicCharacterView):
 
     def get_max_hp(self) -> int:
         return self._character.max_hp
-
-    def get_offensive_multipliers(self) -> Set[Multiplier]:
-        return self._character.offensive_type_affinities
-
-    def get_defensive_multipliers(self) -> Set[Multiplier]:
-        return self._character.defensive_type_affinities
 
     def get_attack_list(self) -> Set[Attack]:
         return self._character.attack_list

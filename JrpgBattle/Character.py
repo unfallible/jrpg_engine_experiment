@@ -24,15 +24,11 @@ class CharacterTemplate:
     def __init__(self,
                  name: str,
                  max_hp: int,
-                 offensive_type_affinities: Set[Multiplier] = frozenset(),
-                 defensive_type_affinities: Set[Multiplier] = frozenset(),
                  attack_list: Set[Attack] = frozenset(),
                  parry_effectiveness: Fraction = Fraction(1)):
         # variables describing the character's current profile
         self.template_name = name
         self.max_hp = max_hp
-        self.offensive_type_affinities = offensive_type_affinities
-        self.defensive_type_affinities = defensive_type_affinities
         self.attack_list = attack_list
         self.parry_effectiveness = parry_effectiveness
 
@@ -41,12 +37,6 @@ class CharacterTemplate:
 
     def get_max_hp(self) -> int:
         return self.max_hp
-
-    def get_offensive_type_affinities(self) -> Set[Multiplier]:
-        return copy(self.offensive_type_affinities)
-
-    def get_defensive_type_affinities(self) -> Set[Multiplier]:
-        return copy(self.defensive_type_affinities)
 
     def get_attack_list(self) -> Set[Attack]:
         return copy(self.attack_list)
@@ -76,8 +66,6 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         CharacterTemplate.__init__(self,
                                    character.get_template_name(),
                                    character.get_max_hp(),
-                                   character.get_offensive_type_affinities(),
-                                   character.get_defensive_type_affinities(),
                                    character.get_attack_list(),
                                    character.get_parry_effectiveness())
         self.character_name = name
@@ -92,8 +80,6 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
         self.defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
         self.public_attack_list: MutableSet[Attack] = set()
-        self.public_offensive_multipliers = set()
-        self.public_defensive_multipliers = set()
         # TODO: add functionality for death
         self.dead: bool = False
 
@@ -103,14 +89,6 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     def publicize_attack(self, attack: Attack):
         assert attack in self.attack_list
         self.public_attack_list.add(attack)
-
-    def publicize_attack_multiplier(self, multiplier: Multiplier):
-        assert multiplier in self.offensive_type_affinities
-        self.public_offensive_multipliers.add(multiplier)
-
-    def publicize_defense_multiplier(self, multiplier: Multiplier):
-        assert multiplier in self.defensive_type_affinities
-        self.public_offensive_multipliers.add(multiplier)
 
     def get_public_attack_list(self) -> Set[Attack]:
         return set(self.public_attack_list)
@@ -196,13 +174,11 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     def end_turn(self):
         self.was_attacked = False
 
-    def attack_payment(self, ap_cost: int, sp_cost: int, mp_cost: int) -> bool:
+    def attack_payment(self, ap_cost: int, sp_cost: int) -> bool:
         if self.current_ap < ap_cost:
             return False
         elif self.current_sp <= 0:
             return False
-        # elif self.party.get_mp() < mp_cost:
-        #     return False
         else:
             self.current_ap -= ap_cost
             self.sp_spent = max(self.sp_spent, sp_cost)
