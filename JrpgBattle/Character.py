@@ -8,7 +8,6 @@ from JrpgBattle.BattleEventHandling.EventManagement import BattleEvent, EventSub
 from JrpgBattle.IdentifierSet import Identifier
 
 if TYPE_CHECKING:
-    from JrpgBattle.Party import Party
     from JrpgBattle.Attack import Attack, DetailedAttackPlan
 
 """
@@ -56,6 +55,11 @@ class CharacterIdentifier(Identifier):
 
 
 class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[BattleEvent]):
+    STANDBY = 0
+    USED_ATTACK = 1
+    STAGGERED = 2
+    DEAD = 3
+
     def __init__(self,
                  character: CharacterTemplate,
                  name: str,
@@ -73,15 +77,14 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.current_hp = current_hp if current_hp is not None else character.get_max_hp()
         self.current_sp: int = 0
         self.sp_spent: int = 0
-        self.current_ap: int = 0
-        self.stagger: bool = False  # This flag is set when a character is staggered. Resets mid-turn
         self.vulnerability: int = 0
         self.was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
+        self.used_attack: bool = False
         self.is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
         self.defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
         self.public_attack_list: MutableSet[Attack] = set()
         # TODO: add functionality for death
-        self.dead: bool = False
+        self.character_state: int = CharacterStatus.STANDBY
 
     def get_character_name(self) -> str:
         return self.character_name
@@ -115,12 +118,12 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.notify_observers(event)
         if self.current_hp <= 0:
             self.current_hp = 0
-            self.dead = True
+            self.character_state = CharacterStatus.DEAD
             event = CharacterUpdateEvent(self, UpdateType.CHARACTER_DIED, character_died=True)
             self.notify_observers(event)
 
     def is_dead(self) -> bool:
-        return self.dead
+        return self.character_state == CharacterStatus.DEAD
 
     # this function performs basic character upkeep at the start of the turn
     def start_turn(self):
@@ -146,12 +149,11 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
             self.vulnerability = 0
 
         if self.is_defending is not None and not self.is_defending.was_attacked:
-            self.stagger = True
+            self.character_state = CharacterStatus.STAGGERED
             stagger_event = CharacterUpdateEvent(self,
                                                  UpdateType.DEFENSE_WHIFFED,
                                                  character_staggers=True)
             self.notify_observers(stagger_event)
-        self.current_ap = 100
         self.sp_spent = 0
 
     # this function performs basic character upkeep between the execution and planning stages
@@ -160,27 +162,26 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.current_sp -= self.sp_spent
 
         # staggered characters don't get stamina points
-        if not self.stagger:
-            self.current_sp += self.current_ap
-            if self.current_ap > 0:
-                event = CharacterUpdateEvent(self, UpdateType.SP_GAINED, sp_change=self.current_ap)
+        if self.character_state == CharacterStatus.STANDBY and not self.used_attack:
+            self.current_sp += 100
+            if self.character_state == CharacterStatus.STANDBY:
+                event = CharacterUpdateEvent(self, UpdateType.SP_GAINED, sp_change=100)
                 self.notify_observers(event)
 
+        self.used_attack = False
         self.is_defending = None
         self.defended_by = None
-        self.stagger = False
+        if self.character_state != CharacterStatus.DEAD:
+            self.character_state = CharacterStatus.STANDBY
 
     # this function performs basic character upkeep at the end of the turn
     def end_turn(self):
         self.was_attacked = False
 
-    def attack_payment(self, ap_cost: int, sp_cost: int) -> bool:
-        if self.current_ap < ap_cost:
-            return False
-        elif self.current_sp <= 0:
+    def attack_payment(self, sp_cost: int) -> bool:
+        if self.current_sp <= 0:
             return False
         else:
-            self.current_ap -= ap_cost
             self.sp_spent = max(self.sp_spent, sp_cost)
             event = CharacterUpdateEvent(self, UpdateType.SP_SPENT, sp_change=-1*self.sp_spent)
             self.notify_observers(event)

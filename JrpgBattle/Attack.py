@@ -6,13 +6,11 @@ from typing import List, Callable, Set, Tuple, TYPE_CHECKING
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from fractions import Fraction
+from JrpgBattle.Character import CharacterStatus
 
 from JrpgBattle.BattleEventHandling.AttackEvent import ParryEvent, AttackStartedEvent, PaymentFailedEvent, \
     AttackStaggeredEvent
 from JrpgBattle.BattleEventHandling.EventManagement import notify_shared_observers
-
-if TYPE_CHECKING:
-    from JrpgBattle.Character import CharacterStatus, CharacterIdentifier
 
 
 class AttackType(IntEnum):
@@ -67,12 +65,10 @@ class Attack(ABC):
                  name: str,
                  attack_type: AttackType=AttackType.UTILITY,  # the elemental event_type of the attack
                  target_range: Tuple[int, int]=(1, 1),  # the minimum and maximum (inclusive) number of characters the attack can target
-                 action_point_cost: int=100,  #
                  stamina_point_cost: int=100):
         self.name = name
         self.attack_type = attack_type
         self.target_range = target_range
-        self.action_point_cost = action_point_cost
         self.stamina_point_cost = stamina_point_cost
 
     def __repr__(self):
@@ -126,13 +122,11 @@ class VanillaAttack(Attack):
                  attack_type: AttackType = AttackType.UTILITY,  # the elemental event_type of the attack
                  # the minimum and maximum (inclusive) number of characters the attack can target
                  target_range: Tuple[int, int] = (1, 1),
-                 action_point_cost: int = 100,  #
                  stamina_point_cost: int = 100,  #
                  damage: int = 0):
         super().__init__(name=name,
                          attack_type=attack_type,
                          target_range=target_range,
-                         action_point_cost=action_point_cost,
                          stamina_point_cost=stamina_point_cost)
         self.damage = damage
 
@@ -185,14 +179,14 @@ class DetailedAttackPlan:
         self.user.notify_observers(attack_event)
 
         # Now process the payment for the attack
-        payment_successful = self.user.attack_payment(self.attack.action_point_cost,
-                                                      self.attack.stamina_point_cost)
+        payment_successful = self.user.attack_payment(self.attack.stamina_point_cost)
         if not payment_successful:
             attack_event = PaymentFailedEvent(self.user, self.attack)
             self.user.notify_observers(attack_event)
             self.status = DetailedAttackPlan.SKIPPED
             return
 
+        self.user.used_attack = True
         # TODO THREADS: Should there be any kind of lock here?
         self.status = DetailedAttackPlan.IN_PROGRESS  # the DetailedAttackPlan is now executing
         swings = 0  # the number of targets the attack has been used against
@@ -211,7 +205,7 @@ class DetailedAttackPlan:
             then the defending character doesn't get penalized for not getting attacked. 
             Putting the check up top might allow deeper reads, but also might be more frustrating. 
             What's the right choice? """
-            if self.user.stagger:
+            if self.user.character_state == CharacterStatus.STAGGERED:
                 attack_event = AttackStaggeredEvent(self.user, self.attack)
                 self.user.notify_observers(attack_event)
                 self.status = DetailedAttackPlan.MISS

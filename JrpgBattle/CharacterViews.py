@@ -25,9 +25,6 @@ class PublicCharacterView(CharacterIdentifier):
     def get_character_name(self) -> str:
         return self._character.character_name
 
-    # def get_party(self) -> Party:
-    #     return self._character.party
-
     def get_vulnerability(self) -> int:
         return self._character.get_vulnerability()
 
@@ -50,7 +47,7 @@ class PublicCharacterView(CharacterIdentifier):
         return self._character.was_attacked
 
     def is_staggered(self) -> bool:
-        return self._character.stagger
+        return self._character.character_state == CharacterStatus.STAGGERED
 
     def is_dead(self) -> bool:
         return self._character.is_dead()
