@@ -54,7 +54,7 @@ class CharacterUpdateEvent(BattleEvent):
         elif self.event_type == UpdateType.VULNERABILITY_RAISED:
             return f'{self.character.character_name} was defended, but nobody attacked. ' \
                    f'{self.character.character_name}\'s guard drops by {self.vulnerability_change}.'
-        elif self.event_type == UpdateType.VULNERABILITY_RAISED:
+        elif self.event_type == UpdateType.CHARACTER_DIED:
             return f'{self.character.character_name} died.'
         else:
             return "invalid update event_type"
