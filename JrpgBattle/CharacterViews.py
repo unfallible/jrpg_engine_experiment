@@ -25,8 +25,8 @@ class PublicCharacterView(CharacterIdentifier):
     def get_character_name(self) -> str:
         return self._character.character_name
 
-    def get_vulnerability(self) -> int:
-        return self._character.get_vulnerability()
+    def get_guard(self) -> Fraction:
+        return self._character.guard
 
     def get_damage(self) -> int:
         return self._character.get_max_hp() - self._character.get_current_hp()
@@ -36,9 +36,6 @@ class PublicCharacterView(CharacterIdentifier):
 
     def get_sp_spent(self) -> int:
         return self._character.sp_spent
-
-    def get_ap(self) -> int:
-        return self._character.current_ap
 
     def get_public_attack_list(self) -> Set[Attack]:
         return copy(self._character.get_public_attack_list())

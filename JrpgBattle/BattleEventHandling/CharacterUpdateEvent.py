@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum, auto
+from fractions import Fraction
 from typing import Set, TYPE_CHECKING
 
 from JrpgBattle.BattleEventHandling.EventManagement import BattleEvent
@@ -12,8 +13,8 @@ class UpdateType(Enum):
     SP_GAINED = auto()
     SP_SPENT = auto()
     DEFENSE_WHIFFED = auto()
-    VULNERABILITY_RESET = auto()
-    VULNERABILITY_RAISED = auto()
+    GUARD_RESET = auto()
+    GUARD_DROPPED = auto()
     CHARACTER_DIED = auto()
 
 
@@ -23,7 +24,8 @@ class CharacterUpdateEvent(BattleEvent):
                  event_type: UpdateType,
                  hp_change: int = 0,
                  sp_change: int = 0,
-                 vulnerability_change: int = 0,
+                 guard_drop: Fraction = Fraction(1),
+                 guard_reset: bool = False,
                  character_staggers: bool = False,
                  character_died: bool = False,
                  cause: BattleEvent = None):
@@ -32,7 +34,8 @@ class CharacterUpdateEvent(BattleEvent):
         self.event_type = event_type
         self.hp_change = hp_change
         self.sp_change = sp_change
-        self.vulnerability_change = vulnerability_change
+        self.guard_drop = guard_drop
+        self.guard_reset = guard_reset
         self.character_staggers = character_staggers
         self.character_died = character_died
 
@@ -48,12 +51,12 @@ class CharacterUpdateEvent(BattleEvent):
                 else self.character.is_defending.character_name
             return f'{self.character.character_name} defended {defense_target}, but nobody attacked. ' \
                    f'{self.character.character_name} staggers.'
-        elif self.event_type == UpdateType.VULNERABILITY_RESET:
+        elif self.event_type == UpdateType.GUARD_RESET:
             return f'{self.character.character_name} was properly defended. ' \
                    f'{self.character.character_name}\'s guard is reset.'
-        elif self.event_type == UpdateType.VULNERABILITY_RAISED:
+        elif self.event_type == UpdateType.GUARD_DROPPED:
             return f'{self.character.character_name} was defended, but nobody attacked. ' \
-                   f'{self.character.character_name}\'s guard drops by {self.vulnerability_change}.'
+                   f'{self.character.character_name}\'s guard drops by {str(1 - self.guard_drop)}.'
         elif self.event_type == UpdateType.CHARACTER_DIED:
             return f'{self.character.character_name} died.'
         else:

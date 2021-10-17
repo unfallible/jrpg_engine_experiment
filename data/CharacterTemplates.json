@@ -2,13 +2,13 @@
   {
     "__class__": "CharacterTemplate",
     "template_name": "somebody",
-    "max_hp": 10,
+    "max_hp": 8,
     "offensive_type_affinities": [],
     "defensive_type_affinities": [],
     "attack_list": [
       "default"
     ],
-    "parry_effectiveness": "3/4"
+    "parry_effectiveness": "1"
   },
   {
     "__class__": "CharacterTemplate",

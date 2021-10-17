@@ -217,19 +217,17 @@ class DetailedAttackPlan:
                 # TODO EVENT: Attack hit
                 hits += 1
             else:
-                # TODO EVENT: Attack parried
-                parry_effectiveness = target.get_defender().get_parry_effectiveness()
-                assist_penalty = Fraction(0) if target.get_defender() is target else Fraction(1, 2)
-                parry_multiplier = 1 - (parry_effectiveness ** float(assist_penalty + target.get_vulnerability()))
+                defender = target.get_defender()
+                parry_effectiveness = defender.get_parry_effectiveness()
+                parry_multiplier = (1 - defender.guard) ** float(parry_effectiveness)
                 parry_event = ParryEvent(self.user,
                                          self.attack,
                                          target,
-                                         target.get_defender())
+                                         defender)
                 notify_shared_observers(parry_event,
                                         self.user,
                                         target,
-                                        target.get_defender())
-
+                                        defender)
 
             # if parry was perfect, just skip the rest of the attack calculations
             if parry_multiplier <= 0:

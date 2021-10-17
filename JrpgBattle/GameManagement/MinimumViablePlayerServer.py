@@ -71,7 +71,8 @@ class SimpleInteractivePlayerServer(PlayerServer):
         print('TEAM:')
         ci = 1
         for c in team:
-            guard_value = "MAX" if not c.get_vulnerability() else str(-1*c.get_vulnerability())
+            # guard_value = "MAX" if not c.get_guard() else str(-1 * c.get_guard())
+            guard_value = f'{float(c.get_guard()):.1%}'
             # the nested f string concatenates 'ci' with '.' and then left justifies it
             print(f'{f"{ci}.":<{3}} {c.get_character_name()[:8]:<{8}} '
                   f'HP:{f"{c.get_current_hp()}/{c.get_max_hp()}":<{8}} '
@@ -84,7 +85,8 @@ class SimpleInteractivePlayerServer(PlayerServer):
         ci = 1
         print('ENEMIES:')
         for c in enemy:
-            guard_value = "MAX" if not c.get_vulnerability() else str(-1*c.get_vulnerability())
+            # guard_value = "MAX" if not c.get_guard() else str(-1 * c.get_guard())
+            guard_value = f'{float(c.get_guard()):.1%}'
             print(f'{f"{ci:}.":<{3}}  {c.get_character_name()[:8]:<{8}} '
                   f'DMG:{c.get_damage():> {4}}/??? '
                   f'SP:{c.get_sp():>+{3}}  GRD:{guard_value}')

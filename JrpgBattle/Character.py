@@ -77,7 +77,7 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.current_hp = current_hp if current_hp is not None else character.get_max_hp()
         self.current_sp: int = 0
         self.sp_spent: int = 0
-        self.vulnerability: int = 0
+        self.guard: Fraction = Fraction(1)
         self.was_attacked: bool = False  # This flag is set when a character is attacked. Resets at end of turn
         self.used_attack: bool = False
         self.is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
@@ -99,8 +99,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     def get_current_hp(self) -> int:
         return self.current_hp
 
-    def get_vulnerability(self) -> int:
-        return self.vulnerability
+    def get_guard(self) -> Fraction:
+        return self.guard
 
     def set_defense(self, target: CharacterStatus):
         target.defended_by = self
@@ -131,22 +131,22 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         if self.defended_by is not None:
             if self.was_attacked:
                 battle_event = CharacterUpdateEvent(self,
-                                                    UpdateType.VULNERABILITY_RESET,
-                                                    vulnerability_change=-1*self.vulnerability)
+                                                    UpdateType.GUARD_RESET,
+                                                    guard_reset=True)
                 self.notify_observers(battle_event)
-                self.vulnerability = 0
+                self.guard = Fraction(1)
             else:
                 battle_event = CharacterUpdateEvent(self,
-                                                    UpdateType.VULNERABILITY_RAISED,
-                                                    vulnerability_change=1)
+                                                    UpdateType.GUARD_DROPPED,
+                                                    guard_drop=Fraction(1, 2))
                 self.notify_observers(battle_event)
-                self.vulnerability += 1
+                self.guard *= Fraction(1, 2)
         elif not self.was_attacked:
             battle_event = CharacterUpdateEvent(self,
-                                                UpdateType.VULNERABILITY_RESET,
-                                                vulnerability_change=-1 * self.vulnerability)
+                                                UpdateType.GUARD_RESET,
+                                                guard_reset=True)
             self.notify_observers(battle_event)
-            self.vulnerability = 0
+            self.guard = Fraction(1)
 
         if self.is_defending is not None and not self.is_defending.was_attacked:
             self.character_state = CharacterStatus.STAGGERED
