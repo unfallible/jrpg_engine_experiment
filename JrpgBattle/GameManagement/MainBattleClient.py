@@ -132,8 +132,6 @@ class MainBattleClient(BattleClient, EventObserver):
                 if winner is not None:
                     break
 
-                # for member in team:
-                #     member.turn_interval()
                 team.turn_interval()
 
                 # once existing plans have been executed, the player plans their next turn
@@ -170,40 +168,30 @@ class MainBattleClient(BattleClient, EventObserver):
             else:
                 # if the plan is invalid, return an error
                 return BattleClient.ERROR
+
+        # now look up the party associated with the action request
+        party = self.open_transactions[transaction_id]
+        # set the party's plans for next turn, then close the transaction
+        # party.attack_queue = new_plans
+        if not party.set_plans(new_plans):
+            return BattleClient.ERROR
+
         # set defenses
         for char_id in defenses:
             target = self.characters_ids[defenses[char_id]]
             self.characters_ids[char_id].set_defense(target)
-        # now look up the party associated with the action request
-        party = self.open_transactions[transaction_id]
-        # set the party's plans for next turn, then close the transaction
-        party.attack_queue = new_plans
         self.open_transactions.pop(transaction_id)
         return BattleClient.SUCCESS
 
-    # def process_view_request(self,
-    #                          server: PlayerServer,
-    #                          transaction_id: int):
-    #     team = next(profile.party for profile in self.roster if profile.server is server)
-    #     team_view = PrivatePartyView(team)
-    #     enemy = next(profile.party for profile in self.roster if profile.server is not server)
-    #     enemy_view = PublicPartyView(enemy)
-    #     rval = server.process_view_response(team_view, enemy_view, transaction_id)
-    #     return rval
-
     def validate_attack_plan(self, plan: AttackPlan, user_party: Party) -> bool:
         # It is ESSENTIAL that attack validation only uses information available to the player who set the plan
-        if plan.user not in user_party:
-            return False
-        # user_status = user_party.get_status(plan.attacker)
-        user_status = self.characters_ids[plan.user]
-        if plan.attack not in user_status.get_attack_list():
-            return False
         # TODO: This loop is pretty harmless but it looks really gross
         # TODO: Consider adding logic to the Attack and Character classes to perform some validation
+        # ensure the each target exists in some party other than the player's party
         for target in plan.targets:
             for player in self.roster:
-                if user_party is not player.party and target in player.party:
+                # this code only works for single target attacks
+                if player.party is not user_party and target in player.party:
                     return True
         return False
 

@@ -87,7 +87,9 @@ class SimpleInteractivePlayerServer(PlayerServer):
         for c in enemy:
             # guard_value = "MAX" if not c.get_guard() else str(-1 * c.get_guard())
             guard_value = f'{float(c.get_guard()):.1%}'
+            next_attack = c.get_next_attack().name if c.get_next_attack() is not None else "???"
             print(f'{f"{ci:}.":<{3}}  {c.get_character_name()[:8]:<{8}} '
                   f'DMG:{c.get_damage():> {4}}/??? '
-                  f'SP:{c.get_sp():>+{3}}  GRD:{guard_value}')
+                  f'SP:{c.get_sp():>+{3}}  GRD:{guard_value}\n'
+                  f'    VIS: {c.get_visibility()}  NEXT: {next_attack}')
             ci += 1

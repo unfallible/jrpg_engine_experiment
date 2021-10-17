@@ -60,6 +60,12 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     STAGGERED = 2
     DEAD = 3
 
+    VISIBILITY_PRIVATE = 0
+    VISIBILITY_LOW = 1
+    VISIBLE_MEDIUM = 2
+    VISIBILITY_HIGH = 3
+    VISIBILITY_PUBLIC = 4
+
     def __init__(self,
                  character: CharacterTemplate,
                  name: str,
@@ -73,7 +79,6 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
                                    character.get_attack_list(),
                                    character.get_parry_effectiveness())
         self.character_name = name
-        # self.party = party
         self.current_hp = current_hp if current_hp is not None else character.get_max_hp()
         self.current_sp: int = 0
         self.sp_spent: int = 0
@@ -83,8 +88,10 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.is_defending: CharacterStatus = None  # The character this one is defending; 'None' if not parrying
         self.defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
         self.public_attack_list: MutableSet[Attack] = set()
-        # TODO: add functionality for death
         self.character_state: int = CharacterStatus.STANDBY
+        # The values regulating the Character's next attack and its visibility
+        self.visibility: int = CharacterStatus.VISIBILITY_PRIVATE
+        self.next_plan: DetailedAttackPlan = None
 
     def get_character_name(self) -> str:
         return self.character_name
@@ -121,6 +128,30 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
             self.character_state = CharacterStatus.DEAD
             event = CharacterUpdateEvent(self, UpdateType.CHARACTER_DIED, character_died=True)
             self.notify_observers(event)
+
+    def set_plan(self, plan: DetailedAttackPlan) -> bool:
+        if self.next_plan is not None:
+            return False
+        if plan.user is not self:
+            return False
+        if plan.attack not in self.attack_list:
+            return False
+        self.next_plan = plan
+        return True
+
+    def raise_visibility(self, visibility: int) -> int:
+        assert CharacterStatus.VISIBILITY_PRIVATE <= visibility <= CharacterStatus.VISIBILITY_PUBLIC
+        self.visibility = max(self.visibility, visibility)
+        return self.visibility
+
+    def next_known_attack(self) -> Attack:
+        if self.next_plan is None:
+            return None
+        next_attack = self.next_plan.attack
+        if next_attack.hiddenness <= self.visibility:
+            return next_attack
+        else:
+            return None
 
     def is_dead(self) -> bool:
         return self.character_state == CharacterStatus.DEAD
@@ -168,6 +199,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
                 event = CharacterUpdateEvent(self, UpdateType.SP_GAINED, sp_change=100)
                 self.notify_observers(event)
 
+        self.visibility = CharacterStatus.VISIBILITY_PRIVATE
+        self.next_plan = None
         self.used_attack = False
         self.is_defending = None
         self.defended_by = None

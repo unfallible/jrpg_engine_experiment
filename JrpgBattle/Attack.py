@@ -65,11 +65,15 @@ class Attack(ABC):
                  name: str,
                  attack_type: AttackType=AttackType.UTILITY,  # the elemental event_type of the attack
                  target_range: Tuple[int, int]=(1, 1),  # the minimum and maximum (inclusive) number of characters the attack can target
-                 stamina_point_cost: int=100):
+                 stamina_point_cost: int=100,
+                 hiddenness: int = CharacterStatus.VISIBLE_MEDIUM,
+                 reveal: int = CharacterStatus.VISIBLE_MEDIUM):
         self.name = name
         self.attack_type = attack_type
         self.target_range = target_range
         self.stamina_point_cost = stamina_point_cost
+        self.hiddenness = hiddenness
+        self.reveal = reveal
 
     def __repr__(self):
         return self.name
@@ -211,11 +215,13 @@ class DetailedAttackPlan:
                 self.status = DetailedAttackPlan.MISS
                 continue
 
+
             # now check if the target is being defended
             parry_multiplier = Fraction(1, 1)
             if target.get_defender() is None:
                 # TODO EVENT: Attack hit
                 hits += 1
+                target.raise_visibility(self.attack.reveal)
             else:
                 defender = target.get_defender()
                 parry_effectiveness = defender.get_parry_effectiveness()

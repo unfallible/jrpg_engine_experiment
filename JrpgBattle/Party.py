@@ -28,7 +28,6 @@ class Party(PartyIdentifier, EventSubject[PartyEvent]):
         EventSubject.__init__(self)
         self.characters: IdentifierSet[CharacterStatus] = IdentifierSet(characters)
         self.attack_queue = attack_queue
-        self._current_mp = current_mp
 
     def get_name(self) -> str:
         return self.name
@@ -44,6 +43,17 @@ class Party(PartyIdentifier, EventSubject[PartyEvent]):
         for member in self.characters:
             if not member.is_dead():
                 return False
+        return True
+
+    def set_plans(self, queue: AttackQueue) -> bool:
+        # It is ESSENTIAL that attack validation only uses information available to the player who set the plan
+        for plan in queue:
+            if plan.user not in self.characters or \
+                    not plan.user.set_plan(plan):
+                for c in self.characters:
+                    c.next_plan = None
+                return False
+        self.attack_queue = queue
         return True
 
     def start_turn(self):
@@ -65,13 +75,3 @@ class Party(PartyIdentifier, EventSubject[PartyEvent]):
             member.turn_interval()
         party_event = PartyEvent(self, PartyEventType.FINISH_INTERVAL)
         self.notify_observers(party_event)
-
-    def get_mp(self) -> int:
-        return self._current_mp
-
-    def spend_mp(self, cost: int) -> bool:
-        if self._current_mp >= cost:
-            self._current_mp -= cost
-            return True
-        else:
-            return False

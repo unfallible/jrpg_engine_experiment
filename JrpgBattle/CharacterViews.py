@@ -46,6 +46,12 @@ class PublicCharacterView(CharacterIdentifier):
     def is_staggered(self) -> bool:
         return self._character.character_state == CharacterStatus.STAGGERED
 
+    def get_next_attack(self) -> Attack:
+        return self._character.next_known_attack()
+
+    def get_visibility(self) -> int:
+        return self._character.visibility
+
     def is_dead(self) -> bool:
         return self._character.is_dead()
 
