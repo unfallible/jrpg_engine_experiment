@@ -7,6 +7,10 @@ if TYPE_CHECKING:
     from JrpgBattle.Party import Party
 
 
+class RedactedError(Exception):
+    pass
+
+
 class PublicCharacterView(CharacterIdentifier):
     """
     PublicCharacterView objects provide views of CharacterStatus objects
@@ -39,6 +43,14 @@ class PublicCharacterView(CharacterIdentifier):
 
     def get_public_attack_list(self) -> Set[Attack]:
         return copy(self._character.get_public_attack_list())
+
+    def is_defense_known(self) -> bool:
+        return self._character.is_defense_known()
+
+    def get_is_defending(self) -> CharacterStatus:
+        if not self.is_defense_known():
+            raise RedactedError()
+        return self._character.is_defending
 
     def was_attacked(self) -> bool:
         return self._character.was_attacked

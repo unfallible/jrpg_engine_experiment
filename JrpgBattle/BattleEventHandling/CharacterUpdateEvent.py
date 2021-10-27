@@ -16,6 +16,7 @@ class UpdateType(Enum):
     GUARD_RESET = auto()
     GUARD_DROPPED = auto()
     CHARACTER_DIED = auto()
+    DEFENSE_SET = auto()
 
 
 class CharacterUpdateEvent(BattleEvent):
@@ -28,6 +29,7 @@ class CharacterUpdateEvent(BattleEvent):
                  guard_reset: bool = False,
                  character_staggers: bool = False,
                  character_died: bool = False,
+                 defense_target: CharacterStatus = None,
                  cause: BattleEvent = None):
         super().__init__(cause=cause)
         self.character = character
@@ -38,6 +40,7 @@ class CharacterUpdateEvent(BattleEvent):
         self.guard_reset = guard_reset
         self.character_staggers = character_staggers
         self.character_died = character_died
+        self.defense_target = defense_target
 
     def __str__(self):
         if self.event_type == UpdateType.SP_GAINED:
@@ -51,6 +54,10 @@ class CharacterUpdateEvent(BattleEvent):
                 else self.character.is_defending.character_name
             return f'{self.character.character_name} defended {defense_target}, but nobody attacked. ' \
                    f'{self.character.character_name} staggers.'
+        elif self.event_type == UpdateType.DEFENSE_SET:
+            defense_target = 'themselves' if self.defense_target == self.character \
+                else self.defense_target.character_name
+            return f'{self.character.character_name} defends {defense_target}.'
         elif self.event_type == UpdateType.GUARD_RESET:
             return f'{self.character.character_name} was properly defended. ' \
                    f'{self.character.character_name}\'s guard is reset.'

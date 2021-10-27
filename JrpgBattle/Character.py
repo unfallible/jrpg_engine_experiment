@@ -66,6 +66,9 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     VISIBILITY_HIGH = 3
     VISIBILITY_PUBLIC = 4
 
+    DEFENSE_PUBLIC = 0
+    DEFENSE_PRIVATE = 1
+
     def __init__(self,
                  character: CharacterTemplate,
                  name: str,
@@ -89,6 +92,8 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
         self.defended_by: CharacterStatus = None  # The character defending this one; 'None' if undefended
         self.public_attack_list: MutableSet[Attack] = set()
         self.character_state: int = CharacterStatus.STANDBY
+        # describes whether the defense is publicised as soon as it's chosen or only after it's needed (e.g. when the defense target is attacked)
+        self.defense_visibility: int = CharacterStatus.DEFENSE_PUBLIC
         # The values regulating the Character's next attack and its visibility
         self.visibility: int = CharacterStatus.VISIBILITY_PRIVATE
         self.next_plan: DetailedAttackPlan = None
@@ -112,6 +117,11 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     def set_defense(self, target: CharacterStatus):
         target.defended_by = self
         self.is_defending = target
+
+    def is_defense_known(self) -> bool:
+        defense_target = self.is_defending
+        return self.defense_visibility == CharacterStatus.DEFENSE_PUBLIC \
+               or (self.is_defending is not None and defense_target.was_attacked)
 
     def get_defender(self) -> CharacterStatus:
         return self.defended_by
@@ -210,15 +220,17 @@ class CharacterStatus(CharacterTemplate, CharacterIdentifier, EventSubject[Battl
     # this function performs basic character upkeep at the end of the turn
     def end_turn(self):
         self.was_attacked = False
+        if self.is_defending is not None and self.defense_visibility == CharacterStatus.DEFENSE_PUBLIC:
+            event = CharacterUpdateEvent(self, UpdateType.DEFENSE_SET, defense_target=self.is_defending)
+            self.notify_observers(event)
 
     def attack_payment(self, sp_cost: int) -> bool:
-        if self.current_sp <= 0:
+        if self.current_sp < sp_cost:
             return False
         else:
             self.sp_spent = max(self.sp_spent, sp_cost)
-            event = CharacterUpdateEvent(self, UpdateType.SP_SPENT, sp_change=-1*self.sp_spent)
+            event = CharacterUpdateEvent(self, UpdateType.SP_SPENT, sp_change=-1 * self.sp_spent)
             self.notify_observers(event)
-            # self.party.spend_mp(mp_cost)
             return True
 
 
